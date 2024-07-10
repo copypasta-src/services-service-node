@@ -55,7 +55,7 @@ jobs:
             aws apprunner create-service \
               --service-name $SERVICE_NAME \
               --region us-east-1 \
-              --source-configuration '{"AuthenticationConfiguration": {"AccessRoleArn" : "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ECR-AppRunner-Access-2"}, "ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
+              --source-configuration '{"AuthenticationConfiguration": {"AccessRoleArn" : "arn:aws:iam::508063382320:role/ECR-AppRunner-Access-2"}, "ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
           else
             echo "App Runner service $SERVICE_NAME already exists."
           fi
