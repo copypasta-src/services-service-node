@@ -49,7 +49,7 @@ jobs:
 
       - name: Create App Runner service if it doesn't exist
         run: |
-          aws apprunner describe-services --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/${{ steps.repo_name.outputs.name }}-app-runner || \
+          aws apprunner describe-service --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/${{ steps.repo_name.outputs.name }}-app-runner || \
           aws apprunner create-service \
             --service-name ${{ steps.repo_name.outputs.name }}-app-runner \
             --source-configuration ImageRepository={ImageRepositoryType="ECR",ImageIdentifier="${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:latest"}
