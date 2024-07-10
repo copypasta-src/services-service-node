@@ -1,0 +1,56 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Change to your AWS region
+
+      - name: Create ECR repository if it doesn't exist
+        run: |
+          aws ecr describe-repositories --repository-names ${{ github.repository.name }} || \
+          aws ecr create-repository --repository-name ${{ github.repository.name }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.repository.name }} # Change to your repository name
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Create App Runner service if it doesn't exist
+        run: |
+          aws apprunner describe-services --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/${{ github.repository.name }}-app-runner || \
+          aws apprunner create-service \
+            --service-name ${{ github.repository.name }}-app-runner \
+            --source-configuration ImageRepository={ImageRepositoryType="ECR",ImageIdentifier="${{ steps.login-ecr.outputs.registry }}/${{ github.repository.name }}:latest"}
+
+      - name: Deploy to AWS App Runner
+        env:
+          SERVICE_NAME: ${{ github.repository.name }}-runner # Change to your App Runner service name
+          ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ github.repository.name }}:${{ github.sha }}
+        run: |
+          aws apprunner start-deployment --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/$SERVICE_NAME --source-configuration '{"ImageRepository": {"ImageIdentifier": "'$ECR_IMAGE'", "ImageRepositoryType": "ECR"}}'

@@ -1,7 +1,8 @@
 require('dotenv').config();
-const app = require('./App');
+// eslint-disable-next-line 
+const app = require('./app');
 // const connectDB = require('./utils/db');
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // connectDB();
 
