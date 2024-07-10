@@ -56,6 +56,7 @@ jobs:
               --service-name $SERVICE_NAME \
               --region us-east-1 \
               --source-configuration '{"ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
+              --authentication-configuration AuthenticationType="ECR",Configuration={AccessRoleArn="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ECR-AppRunner-Access-2"}
           else
             echo "App Runner service $SERVICE_NAME already exists."
           fi
