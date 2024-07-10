@@ -55,7 +55,7 @@ jobs:
             aws apprunner create-service \
               --service-name $SERVICE_NAME \
               --region us-east-1 \
-              --source-configuration ImageRepository={ImageRepositoryType="ECR",ImageIdentifier="${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:latest"}
+              --source-configuration '{"ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
           else
             echo "App Runner service $SERVICE_NAME already exists."
           fi
