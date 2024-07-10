@@ -1,0 +1,135 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: API documentation for our application
+  version: "1.0"
+paths:
+  '/':
+    get:
+      tags:
+      - Hello World
+      summary: Base route returning hello world string
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Server Error
+  '/docs':
+    get:
+      tags:
+      - Docs
+      summary: Get Docs
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Server Error
+  '/github':
+    get:
+      tags:
+      - Github Logic
+      summary: Returns a message indicating github
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Server Error
+  '/github/auth' : 
+    get:
+        tags:
+        - Github Logic
+        summary: Redirects the user to a github hosted authentication page. Upon successful authentication, the user is redirected back to a callback function ```github/auth/callback```.
+        requestBody:
+          required: false
+        responses:
+          '200':
+            description: OK
+          '500':
+            description: Error launching redirect page
+  '/github/auth/callback' :
+    get:
+      tags:
+      - Github Logic
+      summary: Callback function after successful github authentication. This function takes the auth code from the previous function and attempts to exchange it for a user specific access token. If successful, it will store it in the database.
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Failed to exchange code for github authenticaion token.
+  '/github/confirm-repo-name-available' : 
+    get:
+        tags:
+        - Github Logic
+        summary: Checks if the provided repository name is available on github.
+        requestBody:
+          required: false
+        parameters:
+          - name: repoName
+            description: The name of the repository that you want to check
+            in: query
+            required: true
+            schema:
+                type: string
+        responses:
+          '200':
+            description: Repository name is available
+          '400' : 
+            description: Repository name is not available
+          '500':
+            description: Error checking if repository name is available
+  '/expressjs' :
+    get:
+      tags:
+      - ExpressJS Logic
+      summary: Returns a message indicating expressjs
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Server Error
+  '/expressjs/create' :
+    get:
+      tags:
+      - ExpressJS Logic
+      summary: Creates a new expressjs application. Should be used as a part of a larger function.
+      requestBody:
+        required: false
+      parameters:
+        - name: repoName
+          description: The name of the project that you want to create
+          in: query
+          required: true
+          schema:
+              type: string
+      responses:
+        '200':
+          description: Successfully Created
+          content:
+            application/json:  # Media type of the response
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      repoName:
+                        type: string
+                        description: Name of the newly created project
+                      newProjectPath:
+                        type: string
+                        description: Path to the newly created project              
+                  status:
+                    type: string
+          
+        '500':
+          description: Failed to create expressjs application
