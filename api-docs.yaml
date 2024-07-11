@@ -28,6 +28,149 @@ paths:
           description: OK
         '500':
           description: Server Error
+  '/init' :
+    get:
+      tags:
+      - Master Controller
+      summary: Basic hello message from the master controller route
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Server Error
+  '/init/create' :
+    get:
+      tags:
+      - Master Controller
+      summary: Creates a new project. This function will create a new project with the provided name and then initialize the project with the provided template.
+      requestBody:
+        required: true
+      parameters:
+        - name: configuration
+          description: JSON object containing the configuration of the project
+          
+          in: body
+          required: true
+          schema:
+              type: object
+          # TODO FIXME cant have nested objects in the schema
+          properties:
+            meta:
+              description: Metadata about the project
+              required: true
+              schema:
+                  type: object
+              properties:
+                projectName:
+                  type: string
+                  description: formatted name of the project (no spaces, all lowercase, underscores for spaces)
+                name:
+                  type: string
+                  description: Display name of the project
+                description:
+                  type: string
+                  description: Description of the project
+            framework : 
+              description: The framework that you want to use to create the project
+              required: true
+              schema:
+                  type: object
+              properties:
+                framework:
+                  type: string
+                  description: The framework that you want to use to create the project
+            database : 
+              description: The database that you want to use in the project (WIP)
+              required: false
+              schema:
+                  type: object
+            git : 
+              description: The git provider that you want to use in the project
+              required: true
+              schema:
+                  type: object
+              properties:
+                gitProvider:
+                  type: string
+                  description: The git provider that you want to use in the project
+            cicd :
+              description: The CI/CD provider that you want to use in the project
+              required: false
+              schema:
+                  type: object
+              properties:
+                cicdProvider:
+                  type: string
+                  description: The CI/CD provider that you want to use in the project
+            containerization :
+              description: The containerization provider that you want to use in the project
+              required: false
+              schema:
+                  type: object
+              properties:
+                containerizationProvider:
+                  type: string
+                  description: The containerization provider that you want to use in the project  
+                  default: Docker
+                port:
+                  type: string
+                  description: The port that you want to expose on the container
+                  default: 8080
+            deployment:
+              description: The deployment provider that you want to use in the project
+              required: false
+              schema:
+                  type: object
+              properties:
+                deploymentProvider:
+                  type: string
+                  description: The deployment provider that you want to use in the project
+                deploymentProviderConfiguration:
+                  type: object
+                  description: The configuration for the deployment provider
+                  properties:
+                    deploymentModule:
+                      type: string
+                      description: The module that you want to deploy if your provider allows multiple modules
+                    deploymentContainerRepository:
+                      type: string
+                      description: The container repository that you want to use for deployment if you chose to use containerization
+                    autoDeploy:
+                      type: boolean
+                      description: Whether or not you want to automatically deploy the container image every time a new image is uploaded. Vairied applicaibility based on the deployment provider.
+        - name: template
+          description: The template that you want to use to create the project
+          in: query
+          required: true
+          schema:
+              type: string
+      responses:
+        '200':
+          description: Successfully Created
+          content:
+            application/json:  # Media type of the response
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      repoName:
+                        type: string
+                        description: Name of the newly created project
+                      newProjectPath:
+                        type: string
+                        description: Path to the newly created project
+                      template:
+                        type: string
+                        description: The template that was used to create the project
+                  status:
+                    type: string
+          
+        '500':
+          description: Failed to create project
   '/github':
     get:
       tags:

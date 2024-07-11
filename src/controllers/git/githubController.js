@@ -18,7 +18,7 @@ exports.auth = async (req, res) => {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
   }
-  const redirectUri = 'http://localhost:3000/github/auth/callback';
+  const redirectUri = 'http://localhost:8080/github/auth/callback';
   const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
   
   // TODO return this to the client so that the client can redirect to this
@@ -35,6 +35,7 @@ exports.authCallback = async (req, res) => {
   }
 
   const code = req.query.code;
+  console.log(code);
   try {
     const response = await axios.post('https://github.com/login/oauth/access_token', {
       client_id: process.env.GITHUB_CLIENT_ID,
@@ -46,6 +47,7 @@ exports.authCallback = async (req, res) => {
       }
     });
     const accessToken = response.data.access_token;
+    console.log(accessToken);
 
     // TODO this should store the token in the database
     // TODO then you should return the token to the client for client side storing
@@ -60,16 +62,28 @@ exports.authCallback = async (req, res) => {
 };
 
 
-exports.initializeServiceRepository = async (req, res) => {
+exports.initializeServiceRepository = async function(req, res, repoNameArg = null, organizationArg = null, tokenArg = null) {
+  var repoName = ''
+  var organization = ''
+  var token = ''
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
   }
   // GitHub user and repo details
-  const repoName = req.query.repoName;
-  const organization = req.query.organization;
+  if (!req == null) {
+   repoName = req.body.repoName;
+   organization = req.body.organization;
+   token = req.body.token;
+
+} 
+  
+  else {
+     repoName = repoNameArg;
+     organization = organizationArg
+     token = tokenArg
+  }
   // TODO this will get replaced with a call to the database for the user token
-  const token = process.env.GITHUB_AUTH_TOKEN;
   console.log(token, repoName);
 
   // Initialize Octokit
@@ -108,34 +122,41 @@ exports.initializeServiceRepository = async (req, res) => {
     await repo.commit('Created main branch');
     // Push the new branch to the remote repository
     await repo.push('origin', mainBranch);
+  
 
-    // Create a new branch
-    const branchName = 'development';
-    await repo.checkoutLocalBranch(branchName);
+    // // Create a new branch
+    // const branchName = 'development';
+    // await repo.checkoutLocalBranch(branchName);
 
-    // TODO will need to make this a conditional based on chosed flavor of API (react, flask, etc.)
-    response = await expressJSController.createExpressApi(null, null, repoName);
-    console.log(response);
-    repoDirectory = response['data']['newProjectPath'];
+    // // TODO will need to make this a conditional based on chosed flavor of API (react, flask, etc.)
+    // response = await expressJSController.createExpressApi(null, null, repoName);
+    // console.log(response);
+    // repoDirectory = response['data']['newProjectPath'];
     
-    // TODO generate the .pasta file for the service
+    // // TODO generate the .pasta file for the service
 
-    // Stage the new files
-    await repo.add(path.join(repoDirectory, '*'));
+    // // Stage the new files
+    // await repo.add(path.join(repoDirectory, '*'));
 
-    // Commit the changes
-    await repo.commit('Created project');
+    // // Commit the changes
+    // await repo.commit('Created project');
 
-    // Push the new branch to the remote repository
-    await repo.push('origin', branchName);
+    // // Push the new branch to the remote repository
+    // await repo.push('origin', branchName);
 
     // delete temp repo
     fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
-
+    if (!res == null) {
     res.status(200).send({
-      'message' : 'Repository has been created successfully. All files have been pushed to the development branch.',
+      'message' : 'Repository has been created successfully. Main branch has been created.',
       'status' : 200
-    });
+    }); }
+    else {
+      return {
+        'message' : 'Repository has been created successfully. Main branch has been created.',
+        'status' : 200
+      }
+    }
 
 } catch (error) {
   fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
@@ -150,8 +171,96 @@ exports.initializeServiceRepository = async (req, res) => {
   }
 }
 
+exports.createBranchAndCommitDirectories = async function(branchName, directoryPath, repoName, repoOwner) {
+  // Helper function to move directories
+  function copyDirSync(src, dest) {
+    fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+  
+    for (let entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+  
+      if (entry.isDirectory()) {
+        copyDirSync(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath); // This will overwrite the file if it exists
+      }
+    }
+  }
+  
+  function deleteDirSync(dirPath) {
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+  for (let entry of entries) {
+      const entryPath = path.join(dirPath, entry.name);
+
+      entry.isDirectory() ? deleteDirSync(entryPath) : fs.unlinkSync(entryPath);
+  }
+
+  fs.rmdirSync(dirPath);
+
+  }
+    
+  function moveDirSync(srcPath, destPath) {
+  if (fs.existsSync(destPath)) {
+      copyDirSync(srcPath, destPath);
+      deleteDirSync(srcPath);} 
+  else {
+      fs.renameSync(srcPath, destPath);
+      }
+  }
+  if (!Octokit) {
+    const octokitModule = await import('@octokit/rest');
+    Octokit = octokitModule.Octokit;
+  }
+
+  const token = process.env.GITHUB_AUTH_TOKEN;
+  // Initialize Octokit
+  const octokit = new Octokit({
+    auth: token
+  });
+
+  // Local path to clone the repository
+  const repoUrl = `https://github.com/${repoOwner}/${repoName}.git`;
+  const dirpath = path.resolve(__dirname, '..', 'clone', `${repoName}`); // Adjust path as needed
+  fs.mkdirSync(dirpath, { recursive: true })
+  
+  const git = simpleGit();
+
+  await git.clone(repoUrl, dirpath);
+
+  const repo = simpleGit(dirpath);
+
+
+  await repo.checkoutLocalBranch(branchName);
+
+  // move files from temp dir to clone dir
+  moveDirSync(directoryPath, dirpath);
+
+  // Stage the new files
+  await repo.add(path.join(dirpath, '*'));
+
+  // Commit the changes
+  await repo.commit(`Commit of files from ${directoryPath}`);
+
+  // Push the new branch to the remote repository
+  await repo.push('origin', branchName);
+
+  fs.rmSync(dirpath, { recursive: true, force: true });
+
+  fs.rmSync(directoryPath, { recursive: true, force: true });
+
+
+  return {
+    'message': `${branchName} branch created and files committed successfully`,
+    'status': 200
+  };
+
+}
+
 exports.confirmRepoNameAvailable = async (req, res) => {
-  repoName = req.query.repoName;
+  repoName = req.body.repoName;
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
@@ -169,7 +278,8 @@ exports.confirmRepoNameAvailable = async (req, res) => {
   try {
      // Attempt to get the repository details
      await octokit.repos.get({
-      owner: username,
+      // TODO do we actaully need this field?
+      owner: process.env.GITHUB_ORGANIZATION_NAME,
       repo: repoName,
     });
 
@@ -199,4 +309,27 @@ exports.confirmRepoNameAvailable = async (req, res) => {
 
 
 
+}
+
+module.exports.createGithubSecret = async function(secretName, secretValue, repoName, owner) {
+  if (!Octokit) {
+    const octokitModule = await import('@octokit/rest');
+    Octokit = octokitModule.Octokit;
+  }
+
+  const token = process.env.GITHUB_AUTH_TOKEN;
+  // Initialize Octokit
+  const octokit = new Octokit({
+    auth: token
+  });
+
+  const response = await octokit.actions.createOrUpdateSecretForRepo({
+    // This is the organization name
+    owner: owner,
+    repo: repoName,
+    secret_name: secretName,
+    encrypted_value: secretValue
+  });
+
+  return response;
 }
