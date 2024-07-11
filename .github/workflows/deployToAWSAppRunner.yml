@@ -64,4 +64,5 @@ jobs:
           SERVICE_NAME: ${{ steps.repo_name.outputs.name }}-runner # Change to your App Runner service name
           ECR_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}
         run: |
-          aws apprunner start-deployment --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/$SERVICE_NAME --source-configuration '{"ImageRepository": {"ImageIdentifier": "'$ECR_IMAGE'", "ImageRepositoryType": "ECR"}}'
+          aws apprunner start-deployment --service-arn arn:aws:apprunner:us-east-1:${{ secrets.AWS_ACCOUNT_ID }}:service/$SERVICE_NAME 
+        #   --source-configuration '{"ImageRepository": {"ImageIdentifier": "'$ECR_IMAGE'", "ImageRepositoryType": "ECR"}}'
