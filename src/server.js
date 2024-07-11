@@ -1,7 +1,9 @@
 require('dotenv').config();
-const app = require('./App');
-// const connectDB = require('./utils/db');
-const port = process.env.PORT || 3000;
+const app = require('./appfile');
+const port = process.env.PORT || 8080;
+const path = require('path');
+
+global.appRoot = path.basename(path.join(__dirname, '..'));
 
 // connectDB();
 

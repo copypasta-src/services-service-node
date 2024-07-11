@@ -1,6 +1,6 @@
 
 // TODO add more test cases here
-const app = require('../src/App.js'); // Adjust the path as necessary to import your Express app
+const app = require('./src/appfile'); // Adjust the path as necessary to import your Express app
 (async () => {
     const chai = await import('chai');
     const chaiHttp = await import('chai-http');

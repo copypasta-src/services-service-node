@@ -47,7 +47,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
     // ! -----*****----------------
     try{
         if (repoName === null){
-            repoName = req.query.repoName;
+            repoName = req.body.repoName;
         }
         console.log(repoName);
         const dirpath = path.resolve(__dirname, '..', 'temp', repoName); // Adjust path as needed
@@ -58,6 +58,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         }
 
         // Create a new React project
+        // TODO make sure this creates from a copypasta custom template or a user provided template
         const options = { cwd: path.join(__dirname, `../temp/${repoName}`) };
         execSync(`npx create-react-app ${repoName}`, options, (error, stdout, stderr) => {
             if (error) {
@@ -74,10 +75,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         currentProjectPath = path.join(__dirname, `../temp/${repoName}/${repoName}`);
         console.log(`Moving files from ${currentProjectPath}`);
         moveDirSync(currentProjectPath, newProjectPath);
-
-        // TODO dont think we really need this
-        const filePath = path.join(dirpath, 'newfile.txt');
-        fs.writeFileSync(filePath, 'Hello, world!');   
+  
         
         // If the function was called directly
         if (req && res) {
