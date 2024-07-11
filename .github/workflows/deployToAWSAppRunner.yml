@@ -47,18 +47,18 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Create App Runner service if it doesn't exist
-        run: |
-          SERVICE_NAME=${{ steps.repo_name.outputs.name }}-runner
-          if ! aws apprunner describe-services --service-name $SERVICE_NAME --region us-east-1 > /dev/null 2>&1; then
-            echo "App Runner service $SERVICE_NAME does not exist, creating..."
-            aws apprunner create-service \
-              --service-name $SERVICE_NAME \
-              --region us-east-1 \
-              --source-configuration '{"AuthenticationConfiguration": {"AccessRoleArn" : "arn:aws:iam::508063382320:role/ECR-AppRunner-Access-2"}, "ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
-          else
-            echo "App Runner service $SERVICE_NAME already exists."
-          fi
+    #   - name: Create App Runner service if it doesn't exist
+    #     run: |
+    #       SERVICE_NAME=${{ steps.repo_name.outputs.name }}-runner
+    #       if ! aws apprunner describe-services --service-name $SERVICE_NAME --region us-east-1 > /dev/null 2>&1; then
+    #         echo "App Runner service $SERVICE_NAME does not exist, creating..."
+    #         aws apprunner create-service \
+    #           --service-name $SERVICE_NAME \
+    #           --region us-east-1 \
+    #           --source-configuration '{"AuthenticationConfiguration": {"AccessRoleArn" : "arn:aws:iam::508063382320:role/ECR-AppRunner-Access-2"}, "ImageRepository": {"ImageIdentifier": "'${{ steps.login-ecr.outputs.registry }}/${{ steps.repo_name.outputs.name }}:${{ github.sha }}'", "ImageRepositoryType": "ECR"}}'
+    #       else
+    #         echo "App Runner service $SERVICE_NAME already exists."
+    #       fi
       - name: Deploy to AWS App Runner
         env:
           SERVICE_NAME: ${{ steps.repo_name.outputs.name }}-runner # Change to your App Runner service name
