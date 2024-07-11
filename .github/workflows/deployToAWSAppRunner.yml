@@ -1,7 +1,10 @@
 name: Deploy to AWS App Runner
 
 on:
-  push:
+
+  pull_request:
+    types:
+      - closed
     branches:
       - main
 
