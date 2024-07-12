@@ -56,6 +56,7 @@ These instructions are indended to reflect the current state of the API as it ex
     1.2 `AWS_SECRET_ACCESS_KEY` = `{secret-id-from-aws-step-2.5}`
 2. Clone your GitHub Repo, create a new branch called `development` and perform the following edits:
     2.1 At the root of the project, create `Dockerfile` and paste the following into it
+
     ```Dockerfile
         # Use an official Node.js runtime as a parent image
         FROM node:18
@@ -80,8 +81,10 @@ These instructions are indended to reflect the current state of the API as it ex
         # Define the command to run the application
         CMD ["npm", "start"]
     ```
+
     2.2 At the root of the project, create a the directory `.github/workflows`
     2.3 In the directory `.github/workflows`, create a file named `deployToAwsAppRunner.yml` and add the following:
+
     ```yml
     name: Deploy to AWS App Runner
 
@@ -131,12 +134,13 @@ These instructions are indended to reflect the current state of the API as it ex
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
     ```
+    
 3. Commit and push all changed files to the `development branch`
 4. Return to GitHub web and confirm that the Actions Workflow from this commit completes successfully
 5. Create an AWS AppRunner Service (https://us-east-1.console.aws.amazon.com/apprunner/home?region=us-east-1#/services)
-    2.1 Name the service `{my-repository-name}-runner` (case sensitive)
-    2.2 Select to use the image just published to your repository
-    2.3 Select automatic deployment upon new Image upload
-    2.4 Select to create a new ECR access role
-    2.5 Set the health check protocol to HTTP and the endpoint `/status`
+    5.1 Name the service `{my-repository-name}-runner` (case sensitive)
+    5.2 Select to use the image just published to your repository
+    5.3 Select automatic deployment upon new Image upload
+    5.4 Select to create a new ECR access role
+    5.5 Set the health check protocol to HTTP and the endpoint `/status`
 
