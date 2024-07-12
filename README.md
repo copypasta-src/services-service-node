@@ -1,3 +1,4 @@
+
 # NOTES FOR ZACH
 These instructions are indended to reflect the current state of the API as it exists in production. The idea here is that for each component, I can track all the initialization steps required for creating a new microservice on top of that component. As time goes on, I will attempt to improve the API by burning down those lists to be as short as possible (effectively allowing the API to do all the initialization). I will also add new components (deployment options, frameworks, etc) that users can choose to build on.
 
@@ -139,4 +140,5 @@ These instructions are indended to reflect the current state of the API as it ex
     2.3 Select automatic deployment upon new Image upload
     2.4 Select to create a new ECR access role
     2.5 Set the health check protocol to HTTP and the endpoint `/status`
+
 
