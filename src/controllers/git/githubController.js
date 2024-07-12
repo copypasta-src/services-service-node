@@ -122,27 +122,6 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     await repo.commit('Created main branch');
     // Push the new branch to the remote repository
     await repo.push('origin', mainBranch);
-  
-
-    // // Create a new branch
-    // const branchName = 'development';
-    // await repo.checkoutLocalBranch(branchName);
-
-    // // TODO will need to make this a conditional based on chosed flavor of API (react, flask, etc.)
-    // response = await expressJSController.createExpressApi(null, null, repoName);
-    // console.log(response);
-    // repoDirectory = response['data']['newProjectPath'];
-    
-    // // TODO generate the .pasta file for the service
-
-    // // Stage the new files
-    // await repo.add(path.join(repoDirectory, '*'));
-
-    // // Commit the changes
-    // await repo.commit('Created project');
-
-    // // Push the new branch to the remote repository
-    // await repo.push('origin', branchName);
 
     // delete temp repo
     fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
@@ -278,7 +257,7 @@ exports.confirmRepoNameAvailable = async (req, res) => {
   try {
      // Attempt to get the repository details
      await octokit.repos.get({
-      // TODO do we actaully need this field?
+      // TODO change to input parameter
       owner: process.env.GITHUB_ORGANIZATION_NAME,
       repo: repoName,
     });

@@ -1,30 +1,44 @@
 var AWS = require("aws-sdk");
 var uuid = require("uuid");
+require('dotenv').config();
 
 // TODO this needs to be set at the organizational level?
 // Some orgs might use multiple, either way it needs to be a dynamic variable
 AWS.config.update({ region: 'us-east-1' });
 
-// TODO still need to handle auth
+// TODO Need to find a better way to handle this
+const credentials = new AWS.Credentials(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_ACCESS_KEY);
+AWS.config.credentials = credentials;
 
-module.exports.createEcrRepository =  async function() {
+exports.createEcrRepository =  async function(req, res) {
     const ecr = new AWS.ECR();
     const params = {
-      appRoot,
+      // TODO remove - just for test
+      repositoryName: appRoot,
     };
   
     try {
       const data = await ecr.createRepository(params).promise();
       console.log('Repository created:', data.repository.repositoryUri);
-      return data.repository.repositoryUri;
+      if (req) {
+        res.status(200).json({ message: 'Repository created', repositoryUri: data.repository.repositoryUri });
+      }
+      else {
+        return data.repository
+      }
     } catch (err) {
       console.error('Error creating repository:', err);
       throw err;
     }
   }
 
-module.exports.createAppRunnerService = async function (serviceName, imageRepositoryUri) {
+exports.createAppRunnerService = async function(req, res, serviceName, imageRepositoryUri) {
     const apprunner = new AWS.AppRunner();
+
+    if (req) {
+      serviceName = req.body.serviceName;
+      imageRepositoryUri = req.body.imageRepositoryUri;
+    }
     const params = {
       ServiceName: serviceName,
       SourceConfiguration: {
@@ -57,45 +71,41 @@ module.exports.createAppRunnerService = async function (serviceName, imageReposi
     try {
       const data = await apprunner.createService(params).promise();
       console.log('AppRunner service created:', data.Service);
+      if (req) {
+        res.status(200).json({ message: 'Service created', service: data.Service });
+      }
+      else {
       return data.Service;
+    }
     } catch (err) {
       console.error('Error creating AppRunner service:', err);
       throw err;
     }
 }
 
-module.exports.createIamRoleForEcrAppRunnerCreation = async function(roleName, description = 'Role created via SDK') {
+exports.createIamRoleForEcrAppRunnerCreation = async function(req, res, roleName, description = 'Role created via SDK') {
+  if (req) {
+    roleName = req.body.roleName;
+    description = req.body.description;
+  }
     const iam = new AWS.IAM();
-    // TODO need to verify this policy document is sufficient
+    // TODO AWS wont allow a wildcard resourec unless you are a super user
     const policyDocument = {
-        Version: "2012-10-17",
-        Statement: [
-            {
-                Effect: 'Allow',
-                Principal: {
-                  AWS: [
-                    'arn:aws:iam::123456789012:root', // TODO Replace with the AWS account ID you trust
-                  ],
-                },
-                Action: 'sts:AssumeRole',
-              },
-            {
-                Effect: "Allow",
-                Action: [
-                    "ecr:GetDownloadUrlForLayer",
-                    "ecr:BatchGetImage",
-                    "ecr:DescribeImages",
-                    "ecr:GetAuthorizationToken",
-                    "ecr:BatchCheckLayerAvailability",
-                    'sts:AssumeRole',
-                    "apprunner:CreateService",
-                    "apprunner:DescribeService",
-                    "apprunner:StartDeployment"
-                ],
-                Resource: "*"
-            }
-        ]
-    }
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Effect": "Allow",
+              "Action": [
+                  "ecr:GetDownloadUrlForLayer",
+                  "ecr:BatchGetImage",
+                  "ecr:DescribeImages",
+                  "ecr:GetAuthorizationToken",
+                  "ecr:BatchCheckLayerAvailability"
+              ],
+              "Resource": "*"
+          }
+      ]
+  }
     const params = {
         AssumeRolePolicyDocument: JSON.stringify(policyDocument),
         RoleName: roleName,

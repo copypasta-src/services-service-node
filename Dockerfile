@@ -4,9 +4,6 @@ FROM node:18
 # Set the working directory in the container
 WORKDIR /src
 
-# Build arguments
-ARG GOOGLE_APPLICATION_CREDENTIALS
-
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
