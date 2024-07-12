@@ -51,7 +51,7 @@ exports.authCallback = async (req, res) => {
 
     // TODO this should store the token in the database
     // TODO then you should return the token to the client for client side storing
-    await res.status(200).send('Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database.');
+    await res.status(200).send('Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Your auth token has been printed to the console and is embeded in the body of this response');
     
     // Save the access token for the user, e.g., in a database
     console.log(accessToken);
