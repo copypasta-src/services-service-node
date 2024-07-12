@@ -1,12 +1,14 @@
 name: Deploy to AWS App Runner
 
 on:
-
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
-      - main
+      - aws-testing
+  # pull_request:
+  #   types:
+  #     - closed
+  #   branches:
+  #     - main
 
 jobs:
   deploy:
