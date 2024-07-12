@@ -18,8 +18,8 @@ exports.auth = async (req, res) => {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
   }
-  const redirectUri = 'http://localhost:8080/github/auth/callback';
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
+  const redirectUri = `${process.env.GH_AUTH_REDIRECT_URL_BASE}/github/auth/callback`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
   
   // TODO return this to the client so that the client can redirect to this
   res.status(200).redirect(githubAuthUrl)
@@ -38,8 +38,8 @@ exports.authCallback = async (req, res) => {
   console.log(code);
   try {
     const response = await axios.post('https://github.com/login/oauth/access_token', {
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      client_id: process.env.GITHUB_COPYPASTA_APP_CLIENT_ID,
+      client_secret: process.env.GITHUB_COPYPASTA_APP_CLIENT_SECRET,
       code: code
     }, {
       headers: {
@@ -150,7 +150,7 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
   }
 }
 
-exports.createBranchAndCommitDirectories = async function(branchName, directoryPath, repoName, repoOwner) {
+exports.createBranchAndCommitDirectories = async function(branchName, directoryPath, repoName, repoOwner, token) {
   // Helper function to move directories
   function copyDirSync(src, dest) {
     fs.mkdirSync(dest, { recursive: true });
@@ -194,7 +194,6 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
     Octokit = octokitModule.Octokit;
   }
 
-  const token = process.env.GITHUB_AUTH_TOKEN;
   // Initialize Octokit
   const octokit = new Octokit({
     auth: token
@@ -237,7 +236,9 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
   };
 
 }
-
+// TODO this needs to be reviewed.
+// SHould not be referenceing an env var for that GH token
+// Token should be that of the user calling the endpoint and should be an input variable
 exports.confirmRepoNameAvailable = async (req, res) => {
   repoName = req.body.repoName;
   if (!Octokit) {
@@ -290,13 +291,12 @@ exports.confirmRepoNameAvailable = async (req, res) => {
 
 }
 
-module.exports.createGithubSecret = async function(secretName, secretValue, repoName, owner) {
+module.exports.createGithubSecret = async function(secretName, secretValue, repoName, owner, token) {
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
   }
 
-  const token = process.env.GITHUB_AUTH_TOKEN;
   // Initialize Octokit
   const octokit = new Octokit({
     auth: token

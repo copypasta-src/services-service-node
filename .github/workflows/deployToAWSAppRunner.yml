@@ -46,7 +46,10 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ steps.repo_name.outputs.name }} # Change to your repository name
           IMAGE_TAG: latest
+          GITHUB_COPYPASTA_APP_CLIENT_ID : ${{ secrets.GH_COPYPASTA_APP_CLIENT_ID }}
+          GITHUB_COPYPASTA_APP_CLIENT_SECRET : ${{ secrets.GH_COPYPASTA_APP_CLIENT_SECRET }}
+          GH_AUTH_REDIRECT_URL_BASE : ${{ secrets.GH_AUTH_REDIRECT_URL_BASE }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build --build-arg GITHUB_COPYPASTA_APP_CLIENT_ID=$GITHUB_COPYPASTA_APP_CLIENT_ID --build-arg GITHUB_COPYPASTA_APP_CLIENT_SECRET=$GITHUB_COPYPASTA_APP_CLIENT_SECRET --build-arg GH_AUTH_REDIRECT_URL_BASE=$GH_AUTH_REDIRECT_URL_BASE -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
