@@ -19,7 +19,7 @@ exports.auth = async (req, res) => {
     Octokit = octokitModule.Octokit;
   }
   const redirectUri = `${process.env.GH_AUTH_REDIRECT_URL_BASE}/github/auth/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,user`;
   
   // TODO return this to the client so that the client can redirect to this
   res.status(200).redirect(githubAuthUrl)
@@ -51,7 +51,7 @@ exports.authCallback = async (req, res) => {
 
     // TODO this should store the token in the database
     // TODO then you should return the token to the client for client side storing
-    await res.status(200).send('Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database.');
+    await res.status(200).send('Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Your auth token has been printed to the console and is embeded in the body of this response');
     
     // Save the access token for the user, e.g., in a database
     console.log(accessToken);

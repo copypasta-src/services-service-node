@@ -1,0 +1,59 @@
+name: Run Tests on Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+  notify_failure:
+    name: Send Slack on Failure
+    needs: 
+      - test 
+    runs-on: ubuntu-latest
+    if: ${{ failure() && (needs.test.result == 'failure') }}
+    steps:
+    - name: Send Failure Notification to Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: express-js-cicd-alerts # Replace with your Slack channel name
+        SLACK_COLOR: '#FF0000' # Red color for failure messages
+        SLACK_ICON: ':github:' # Slack icon, you can customize this
+        SLACK_MESSAGE: ':x: One or more of the automated tests located in `/tests`.' # Custom message
+        SLACK_TITLE: 'Testing Failure Notification'
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # Use the secret you added
+  notify_success:
+    name: Send Slack on Success
+    needs: 
+      - test 
+    runs-on: ubuntu-latest
+    if: ${{ success() && needs.test.result == 'success' }}
+    steps:
+    - name: Send Success Notification to Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: express-js-cicd-alerts
+        SLACK_COLOR: '#36A64F' # Green color for success messages
+        SLACK_ICON: ':white_check_mark:' # Customize as needed
+        SLACK_MESSAGE: 'Automated tests passed :white_check_mark:' # Custom success message
+        SLACK_TITLE: 'Testing Success Notification'
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
