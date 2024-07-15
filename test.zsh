@@ -1,0 +1,2 @@
+docker build . -t zmtucker/services-service-node --build-arg GITHUB_COPYPASTA_APP_CLIENT_ID=Ov23lir87U0ExodZ6Bx7 --build-arg GITHUB_COPYPASTA_APP_CLIENT_SECRET=e14f14fac945e682eaa3923dbdc9ac2de7d15e71
+docker run  -p 8080:8080 zmtucker/services-service-node

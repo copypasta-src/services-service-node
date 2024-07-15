@@ -22,5 +22,20 @@ const app = require('../src/appfile'); // Adjust the path as necessary to import
             });
         });
     });
+    describe("Error Test", () => {
+        describe("GET /github/auth", () => {
+            // Test to get the status of the API
+            it("should get the status message", async (done) => {
+                chai.request(app)
+                    .get('/github/auth')
+                    .end((err, res) => {
+                        res.should.have.status(500);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('message').eql('Error authenticating with GitHub');
+                        done();
+                    });
+            });
+        });
+    });
 })();
 

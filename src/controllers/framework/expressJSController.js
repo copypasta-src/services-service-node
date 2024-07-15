@@ -2,6 +2,8 @@ require('dotenv').config();
 const execSync = require('child_process').execSync;
 const fs = require('fs');
 const path = require('path');
+const errorHandler = require('../../middleware/errorHandler').errorHandler;
+const requestResponseHandler = require('../../middleware/requestResponseHandler').requestResponseHandler;
 
 
 module.exports.createExpressApi = async function(req, res, repoName = null)  {
@@ -62,11 +64,12 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         const options = { cwd: path.join(__dirname, `../temp/${repoName}`) };
         execSync(`npx create-react-app ${repoName}`, options, (error, stdout, stderr) => {
             if (error) {
-            console.error(`Error executing command: ${error.message}`);
+            // console.error(`Error executing command: ${error.message}`);
+            throw Error(`Error executing command: ${error.message}`)
             }
 
             if (stderr) {
-            console.error(`Standard Error: ${stderr}`);
+            throw Error(`Standard Error: ${stderr}`);
             }
         });
 
@@ -76,32 +79,13 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         console.log(`Moving files from ${currentProjectPath}`);
         moveDirSync(currentProjectPath, newProjectPath);
   
+        // Send response 
+        requestResponseHandler(req, res, {message: 'Express API created successfully', data: {repoName: repoName, newProjectPath: newProjectPath,}, status : 200})
         
-        // If the function was called directly
-        if (req && res) {
-            res.status(200).send({
-                message: 'Express API created successfully',
-                data: {
-                    repoName: repoName,
-                    newProjectPath: newProjectPath,
-                }
-            });
-        }
-        // If the function was called from another function 
-        else {
-            return {
-                message: 'Express API created successfully',
-                data: {
-                    repoName: repoName,
-                    newProjectPath: newProjectPath,
-                }
-            
-            }
         
-        } 
+        
 
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error creating express api');
+        errorHandler(error, req, res, null, {message: 'Error creating express api', status: 500});
     }
 }
