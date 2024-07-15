@@ -19,7 +19,7 @@ exports.auth = async (req, res) => {
     Octokit = octokitModule.Octokit;
   }
   const redirectUri = `${process.env.GH_AUTH_REDIRECT_URL_BASE}/github/auth/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,user`;
   
   // TODO return this to the client so that the client can redirect to this
   res.status(200).redirect(githubAuthUrl)
