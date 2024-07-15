@@ -6,6 +6,8 @@ const path = require('path');
 const { dir } = require('console');
 require('dotenv').config();
 const execSync = require('child_process').execSync;
+const errorHandler = require('../../middleware/errorHandler').errorHandler;
+const requestResponseHandler = require('../../middleware/requestResponseHandler').requestResponseHandler;
 const expressJSController = require('../framework/expressJSController');
 
 
@@ -24,7 +26,7 @@ exports.auth = async (req, res) => {
   // TODO return this to the client so that the client can redirect to this
   res.status(200).redirect(githubAuthUrl)
 } catch (error) {
-  res.status(500).send('Error authenticating with GitHub');
+  errorHandler(error, req, res, null, {message: 'Error authenticating with GitHub', status: 500});
 }
 }
 
@@ -35,7 +37,6 @@ exports.authCallback = async (req, res) => {
   }
 
   const code = req.query.code;
-  console.log(code);
   try {
     const response = await axios.post('https://github.com/login/oauth/access_token', {
       client_id: process.env.GITHUB_COPYPASTA_APP_CLIENT_ID,
@@ -49,15 +50,12 @@ exports.authCallback = async (req, res) => {
     const accessToken = response.data.access_token;
     console.log(accessToken);
 
-    // TODO this should store the token in the database
-    // TODO then you should return the token to the client for client side storing
-    await res.status(200).send('Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Your auth token has been printed to the console and is embeded in the body of this response');
+    await requestResponseHandler(req, res, {'message' : `Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Token ${accessToken}`, 'status' : 200});
     
-    // Save the access token for the user, e.g., in a database
+    // TODO Save the access token for the user, e.g., in a database
     console.log(accessToken);
-    // res.send('Authentication successful! You can now make commits on behalf of the user.');
   } catch (error) {
-    res.status(500).send('Error exchanging code for access token');
+    errorHandler(error, req, res, null, {message: 'Error exchanging code for access token', status: 500});
   }
 };
 
@@ -105,7 +103,7 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     
     const git = simpleGit();
     // Set Git configuration with user details
-    try {
+
       if (!primaryEmail ) {
         throw new Error("User name or email is missing from GitHub profile.");
       } if (!user.name) {
@@ -144,16 +142,6 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
       }
       console.log(`GitHub token stored.`);
     });
-    } 
-    
-    catch (error) {
-      console.error(`Failed to configure Git: ${error.message}`);
-    }
-  
-
-    // await git.addConfig('user.name', githubName); // Replace with your GitHub username
-    // await git.addConfig('user.email', githubEmail);
-  
 
     await git.clone(repoUrl, dirpath);
 
@@ -177,17 +165,9 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     // delete temp repo
     fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
     console.log('Repository has been created successfully. Main branch has been created.')
-    if (!res == null) {
-    res.status(200).send({
-      'message' : 'Repository has been created successfully. Main branch has been created.',
-      'status' : 200
-    }); }
-    else {
-      return {
-        'message' : 'Repository has been created successfully. Main branch has been created.',
-        'status' : 200
-      }
-    }
+
+    // Send your response
+    requestResponseHandler(req, res, {'message' : 'Repository has been created successfully. Main branch has been created.','status' : 200})
 
 } catch (error) {
   fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
@@ -196,19 +176,12 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     repo: repoName
 });
   console.log('Repository deleted successfully');
-  console.error(error);
-  if (!res == null) {
-    res.status(500).send({'message' :'Error creating repository', 'content' : error});
-  }
-  else {
-    throw new Error('Error creating repository');
-  }
 
-
+  errorHandler(error, req, res, null, {message: 'Error creating repository', status: 500});
   }
 }
 
-exports.createBranchAndCommitDirectories = async function(branchName, directoryPath, repoName, repoOwner, token) {
+exports.createBranchAndCommitDirectories = async function(req, res, branchName, directoryPath, repoName, repoOwner, token) {
   // Helper function to move directories
   function copyDirSync(src, dest) {
     fs.mkdirSync(dest, { recursive: true });
@@ -254,52 +227,51 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
 
   try {
 
-  // Initialize Octokit
-  const octokit = new Octokit({
-    auth: token
-  });
+    // Initialize Octokit
+    const octokit = new Octokit({
+      auth: token
+    });
 
-  // Local path to clone the repository
-  const repoUrl = `https://github.com/${repoOwner}/${repoName}.git`;
-  const dirpath = path.resolve(__dirname, '..', 'clone', `${repoName}`); // Adjust path as needed
-  fs.mkdirSync(dirpath, { recursive: true })
-  
-  const git = simpleGit();
+    // Local path to clone the repository
+    const repoUrl = `https://github.com/${repoOwner}/${repoName}.git`;
+    const dirpath = path.resolve(__dirname, '..', 'clone', `${repoName}`); // Adjust path as needed
+    fs.mkdirSync(dirpath, { recursive: true })
+    
+    const git = simpleGit();
 
-  // await git.addConfig('user.name', githubName); // Replace with your GitHub username
-  // await git.addConfig('user.email', githubEmail);
+    // await git.addConfig('user.name', githubName); // Replace with your GitHub username
+    // await git.addConfig('user.email', githubEmail);
 
-  await git.clone(repoUrl, dirpath);
+    await git.clone(repoUrl, dirpath);
 
-  const repo = simpleGit(dirpath);
+    const repo = simpleGit(dirpath);
 
 
-  await repo.checkoutLocalBranch(branchName);
+    await repo.checkoutLocalBranch(branchName);
 
-  // move files from temp dir to clone dir
-  moveDirSync(directoryPath, dirpath);
+    // move files from temp dir to clone dir
+    moveDirSync(directoryPath, dirpath);
 
-  // Stage the new files
-  await repo.add(path.join(dirpath, '*'));
+    // Stage the new files
+    await repo.add(path.join(dirpath, '*'));
 
-  // Commit the changes
-  await repo.commit(`Commit of files from ${directoryPath}`);
+    // Commit the changes
+    await repo.commit(`Commit of files from ${directoryPath}`);
 
-  // Push the new branch to the remote repository
-  await repo.push('origin', branchName);
+    // Push the new branch to the remote repository
+    await repo.push('origin', branchName);
 
-  fs.rmSync(dirpath, { recursive: true, force: true });
+    fs.rmSync(dirpath, { recursive: true, force: true });
 
-  fs.rmSync(directoryPath, { recursive: true, force: true });
+    fs.rmSync(directoryPath, { recursive: true, force: true });
 
-  console.log(`${branchName} branch created and files committed successfully`);
-  return {
-    'message': `${branchName} branch created and files committed successfully`,
-    'status': 200
-  };
+    console.log(`${branchName} branch created and files committed successfully`);
+
+    // Send your response
+    requestResponseHandler(req, res, {'message' : `${branchName} branch created and files committed successfully`, 'status' : 200})
+    
 } catch (error) {
-  console.log(error);
-  throw new Error('Error creating branch and committing files');
+    errorHandler(error, req, res, null, {message: 'Error creating branch and committing files', status: 500});
 }
 
 }
@@ -329,26 +301,11 @@ exports.confirmRepoNameAvailable = async (req, res) => {
     });
 
     // If the request succeeds, the repository name is taken
-    res.status(400).send({
-      'message': 'Repository name is already taken',
-      'data': {
-        'available': false
-      },
-      'status' : 400
-    }
-    );
+    errorHandler(new Error('Repository name is already taken'), req, res, null, {message : 'Repository name is already taken',status: 400});
+
   } catch (error) {
-    // If the request fails, the repository name may be available
-    // Check the error status code to be sure
     if (error.status === 404) {
-      res.status(200).send({
-        'message': 'Repository name is available',
-        'data': {
-          'available': true
-        },
-        'status' : 200
-      }
-      );
+      requestResponseHandler(req, res, {status: 200, message: 'Repository name is available', data: {available: true}});
     }
   }
 }

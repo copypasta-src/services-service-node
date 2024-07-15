@@ -1,6 +1,9 @@
 var AWS = require("aws-sdk");
 var uuid = require("uuid");
 require('dotenv').config();
+const errorHandler = require('../../middleware/errorHandler').errorHandler;
+const requestResponseHandler = require('../../middleware/requestResponseHandler').requestResponseHandler;
+
 
 // TODO this needs to be set at the organizational level?
 // Some orgs might use multiple, either way it needs to be a dynamic variable
@@ -20,15 +23,12 @@ exports.createEcrRepository =  async function(req, res) {
     try {
       const data = await ecr.createRepository(params).promise();
       console.log('Repository created:', data.repository.repositoryUri);
-      if (req) {
-        res.status(200).json({ message: 'Repository created', repositoryUri: data.repository.repositoryUri });
-      }
-      else {
-        return data.repository
-      }
+      
+      // Send response 
+      requestResponseHandler(req, res, { message: 'Repository created', repositoryUri: data.repository.repositoryUri , status :200});
+
     } catch (err) {
-      console.error('Error creating repository:', err);
-      throw err;
+      errorHandler(err, req, res, null, { message: 'Error creating repository', status: 500 });
     }
   }
 
@@ -71,15 +71,10 @@ exports.createAppRunnerService = async function(req, res, serviceName, imageRepo
     try {
       const data = await apprunner.createService(params).promise();
       console.log('AppRunner service created:', data.Service);
-      if (req) {
-        res.status(200).json({ message: 'Service created', service: data.Service });
-      }
-      else {
-      return data.Service;
-    }
+      requestResponseHandler(req, res, { message: 'Service created', service: data.Service , status :200});
+      
     } catch (err) {
-      console.error('Error creating AppRunner service:', err);
-      throw err;
+      errorHandler(err, req, res, null, { message: 'Error creating AppRunner service', status: 500 });
     }
 }
 
@@ -115,10 +110,11 @@ exports.createIamRoleForEcrAppRunnerCreation = async function(req, res, roleName
       try {
         const data = await iam.createRole(params).promise();
         console.log('Role created:', data.Role);
-        return data.Role;
+
+        // Send Response
+        requestResponseHandler(req, res, { message: 'Role created', role: data.Role , status :200});
       } catch (err) {
-        console.error('Error creating role:', err);
-        throw err;
+        errorHandler(err, req, res, null, { message: 'Error creating role', status: 500 });
     }
 }
 
@@ -174,11 +170,13 @@ module.exports.createNewIamUserForEcrAppRunnerCreation = async function(username
       };
       const createAccessKeyData = await iam.createAccessKey(createAccessKeyParams).promise();
       console.log('Access keys created:', createAccessKeyData.AccessKey);
+
+      // Send Response
+      requestResponseHandler(req, res, { message: 'User created', user: data.User , status :200});
   
     //   return createUserData.User;
     } catch (err) {
-      console.error('Error:', err);
-      throw err;
+      errorHandler(err, req, res, null, { message: 'Error creating user', status: 500 });
     }
 
 }
