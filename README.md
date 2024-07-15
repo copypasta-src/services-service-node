@@ -18,13 +18,13 @@ These instructions are indended to reflect the current state of the API as it ex
 
 ## AWS AppRunner + ECR
 1. Create an AWS ECR Repository
-    1.1 Name the repository `{my-repository-name}` (case sensitive)
+    - 1.1 Name the repository `{my-repository-name}` (case sensitive)
 2. Create a new IAM user for deployment (https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/home)
-    2.1 Navigate to IAM -> Users -> Create new User
-    2.2 Name the user whatever you'd like
-    2.3 Attach the policy `AmazonEC2ContainerRegistryFullAccess`
-    2.4 Under "Security Credentials", create a new access key (select the 3rd party service option)
-    2.5 Copy down your access ID and secret ID for use later
+    - 2.1 Navigate to IAM -> Users -> Create new User
+    - 2.2 Name the user whatever you'd like
+    - 2.3 Attach the policy `AmazonEC2ContainerRegistryFullAccess`
+    - 2.4 Under "Security Credentials", create a new access key (select the 3rd party service option)
+    - 2.5 Copy down your access ID and secret ID for use later
 
 
 # How to use `init/create`
@@ -53,10 +53,10 @@ These instructions are indended to reflect the current state of the API as it ex
 
 # What do I do after the request?
 1. Open your GitHub Repo and add the following repository secrets:
-    1.1 `AWS_ACCESS_KEY_ID` = `{key-from-aws-step-2.5}`
-    1.2 `AWS_SECRET_ACCESS_KEY` = `{secret-id-from-aws-step-2.5}`
+    - 1.1 `AWS_ACCESS_KEY_ID` = `{key-from-aws-step-2.5}`
+    - 1.2 `AWS_SECRET_ACCESS_KEY` = `{secret-id-from-aws-step-2.5}`
 2. Clone your GitHub Repo, create a new branch called `development` and perform the following edits:
-    2.1 At the root of the project, create `Dockerfile` and paste the following into it
+    - 2.1 At the root of the project, create `Dockerfile` and paste the following into it
 
     ```Dockerfile
         # Use an official Node.js runtime as a parent image
@@ -83,8 +83,8 @@ These instructions are indended to reflect the current state of the API as it ex
         CMD ["npm", "start"]
     ```
 
-    2.2 At the root of the project, create a the directory `.github/workflows`
-    2.3 In the directory `.github/workflows`, create a file named `deployToAwsAppRunner.yml` and add the following:
+    - 2.2 At the root of the project, create a the directory `.github/workflows`
+    - 2.3 In the directory `.github/workflows`, create a file named `deployToAwsAppRunner.yml` and add the following:
 
     ```yml
     name: Deploy to AWS App Runner
@@ -139,10 +139,10 @@ These instructions are indended to reflect the current state of the API as it ex
 3. Commit and push all changed files to the `development branch`
 4. Return to GitHub web and confirm that the Actions Workflow from this commit completes successfully
 5. Create an AWS AppRunner Service (https://us-east-1.console.aws.amazon.com/apprunner/home?region=us-east-1#/services)
-    5.1 Name the service `{my-repository-name}-runner` (case sensitive)
-    5.2 Select to use the image just published to your repository
-    5.3 Select automatic deployment upon new Image upload
-    5.4 Select to create a new ECR access role
-    5.5 Set the health check protocol to HTTP and the endpoint `/status`
+    - 5.1 Name the service `{my-repository-name}-runner` (case sensitive)
+    - 5.2 Select to use the image just published to your repository
+    - 5.3 Select automatic deployment upon new Image upload
+    - 5.4 Select to create a new ECR access role
+    - 5.5 Set the health check protocol to HTTP and the endpoint `/status`
 
 

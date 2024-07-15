@@ -221,6 +221,18 @@ paths:
             required: true
             schema:
                 type: string
+          - name: token
+            description: The github token of the user
+            in: body
+            required: true
+            schema:
+                type: string
+          - name: organization
+            description: The organization that you want to check the repository name in
+            in: body
+            required: true
+            schema:
+                type: string
         responses:
           '200':
             description: Repository name is available

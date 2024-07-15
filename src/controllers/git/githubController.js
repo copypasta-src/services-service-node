@@ -66,6 +66,7 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
   var repoName = ''
   var organization = ''
   var token = ''
+
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
@@ -75,7 +76,6 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
    repoName = req.body.repoName;
    organization = req.body.organization;
    token = req.body.token;
-
 } 
   
   else {
@@ -83,16 +83,17 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
      organization = organizationArg
      token = tokenArg
   }
-  // TODO this will get replaced with a call to the database for the user token
-  console.log(token, repoName);
 
   // Initialize Octokit
-  const octokit = new Octokit({
+  const octokit = await new Octokit({
     auth: token
   });
 
-  // Get user details
-  const { data: { login: username } } = await octokit.users.getAuthenticated();
+  // Fetch the authenticated user's details
+  const { data: user } = await octokit.users.getAuthenticated();
+  const { data: emails } = await octokit.users.listEmailsForAuthenticatedUser();
+  emails.length == 0 ? primaryEmail = emails :primaryEmail = emails.find(email => email.primary).email;
+  
   try {
     // Create a new repository
     await octokit.repos.createInOrg({ name: repoName, org: organization });
@@ -103,6 +104,56 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     fs.mkdirSync(dirpath, { recursive: true })
     
     const git = simpleGit();
+    // Set Git configuration with user details
+    try {
+      if (!primaryEmail ) {
+        throw new Error("User name or email is missing from GitHub profile.");
+      } if (!user.name) {
+        user.name = 'GitHub User';
+      }
+      // Set Git configuration with user details
+      execSync(`git config --global user.email "${primaryEmail}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error setting Git email: ${stderr}`);
+          throw new Error(`Error setting Git email: ${stderr}`);
+        }
+        console.log(`Git email set to: ${primaryEmail}`);
+      });
+  
+      execSync(`git config --global user.name "${user.name}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error setting Git name: ${stderr}`);
+          throw new Error(`Error setting Git name: ${stderr}`);
+        }
+        console.log(`Git name set to: ${user.name}`);
+      });
+      // Set up Git credential helper
+    execSync(`git config --global credential.helper store`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error setting Git credential helper: ${stderr}`);
+        throw new Error(`Error setting Git credential helper: ${stderr}`);
+      }
+      console.log(`Git credential helper set.`);
+    });
+
+    // Store the GitHub token in the credential helper
+    execSync(`echo "https://${user.login}:${token}@github.com" > ~/.git-credentials`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error storing GitHub token: ${stderr}`);
+        throw new Error(`Error storing GitHub token: ${stderr}`);
+      }
+      console.log(`GitHub token stored.`);
+    });
+    } 
+    
+    catch (error) {
+      console.error(`Failed to configure Git: ${error.message}`);
+    }
+  
+
+    // await git.addConfig('user.name', githubName); // Replace with your GitHub username
+    // await git.addConfig('user.email', githubEmail);
+  
 
     await git.clone(repoUrl, dirpath);
 
@@ -125,6 +176,7 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
 
     // delete temp repo
     fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
+    console.log('Repository has been created successfully. Main branch has been created.')
     if (!res == null) {
     res.status(200).send({
       'message' : 'Repository has been created successfully. Main branch has been created.',
@@ -200,6 +252,8 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
     Octokit = octokitModule.Octokit;
   }
 
+  try {
+
   // Initialize Octokit
   const octokit = new Octokit({
     auth: token
@@ -211,6 +265,9 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
   fs.mkdirSync(dirpath, { recursive: true })
   
   const git = simpleGit();
+
+  // await git.addConfig('user.name', githubName); // Replace with your GitHub username
+  // await git.addConfig('user.email', githubEmail);
 
   await git.clone(repoUrl, dirpath);
 
@@ -235,24 +292,27 @@ exports.createBranchAndCommitDirectories = async function(branchName, directoryP
 
   fs.rmSync(directoryPath, { recursive: true, force: true });
 
-
+  console.log(`${branchName} branch created and files committed successfully`);
   return {
     'message': `${branchName} branch created and files committed successfully`,
     'status': 200
   };
+} catch (error) {
+  console.log(error);
+  throw new Error('Error creating branch and committing files');
+}
 
 }
-// TODO this needs to be reviewed.
-// SHould not be referenceing an env var for that GH token
-// Token should be that of the user calling the endpoint and should be an input variable
+
 exports.confirmRepoNameAvailable = async (req, res) => {
-  repoName = req.body.repoName;
+  const repoName = req.body.repoName;
+  const token = req.body.token;
+  const organization = req.body.organization;
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
     Octokit = octokitModule.Octokit;
   }
 
-  const token = process.env.GITHUB_AUTH_TOKEN;
   // Initialize Octokit
   const octokit = new Octokit({
     auth: token
@@ -263,9 +323,8 @@ exports.confirmRepoNameAvailable = async (req, res) => {
 
   try {
      // Attempt to get the repository details
-     await octokit.repos.get({
-      // TODO change to input parameter
-      owner: process.env.GITHUB_ORGANIZATION_NAME,
+    const result =  await octokit.repos.get({
+      owner: organization,
       repo: repoName,
     });
 
@@ -292,9 +351,6 @@ exports.confirmRepoNameAvailable = async (req, res) => {
       );
     }
   }
-
-
-
 }
 
 module.exports.createGithubSecret = async function(secretName, secretValue, repoName, owner, token) {
