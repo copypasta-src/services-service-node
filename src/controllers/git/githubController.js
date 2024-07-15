@@ -19,7 +19,7 @@ exports.auth = async (req, res) => {
     Octokit = octokitModule.Octokit;
   }
   const redirectUri = `${process.env.GH_AUTH_REDIRECT_URL_BASE}/github/auth/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,user`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_COPYPASTA_APP_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,user,delete_repo`;
   
   // TODO return this to the client so that the client can redirect to this
   res.status(200).redirect(githubAuthUrl)
@@ -139,13 +139,19 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
 
 } catch (error) {
   fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
-
+  await octokit.rest.repos.delete({
+    owner: organization,
+    repo: repoName
+});
+  console.log('Repository deleted successfully');
   console.error(error);
-  //   await octokit.rest.repos.delete({
-  //     owner: username,
-  //     repo: repoName
-  // });
-    // console.log('Repository deleted successfully');
+  if (!res == null) {
+    res.status(500).send({'message' :'Error creating repository', 'content' : error});
+  }
+  else {
+    throw new Error('Error creating repository');
+  }
+
 
   }
 }
