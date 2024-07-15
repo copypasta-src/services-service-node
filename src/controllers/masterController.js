@@ -68,7 +68,7 @@ exports.createMicroservice = async (req, res) =>  {
         // extract the dir path
         repoDirectory = response['data']['newProjectPath'];
         // commit the dir to the repo on a new branch
-        await gitController.createBranchAndCommitDirectories('development', repoDirectory, configuration.meta.projectName , configuration.git.organizationName, configuration.git.token)
+        await gitController.createBranchAndCommitDirectories(req = null, res = null , 'development', repoDirectory, configuration.meta.projectName , configuration.git.organizationName, configuration.git.token)
     }
     if (configuration.containerization) {
     if (configuration.containerization.containerizationProvider === 'docker') {
