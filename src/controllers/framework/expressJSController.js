@@ -83,7 +83,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         moveDirSync(currentProjectPath, newProjectPath);
   
         // Send response 
-        requestResponseHandler(req, res, {message: 'Express API created successfully', data: {repoName: repoName, newProjectPath: newProjectPath,}, status : 200})
+        return requestResponseHandler(req, res, {message: 'Express API created successfully', data: {repoName: repoName, newProjectPath: newProjectPath,}, status : 200})
         
         
         

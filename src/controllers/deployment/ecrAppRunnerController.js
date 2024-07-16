@@ -25,7 +25,7 @@ exports.createEcrRepository =  async function(req, res) {
       console.log('Repository created:', data.repository.repositoryUri);
       
       // Send response 
-      requestResponseHandler(req, res, { message: 'Repository created', repositoryUri: data.repository.repositoryUri , status :200});
+      return requestResponseHandler(req, res, { message: 'Repository created', repositoryUri: data.repository.repositoryUri , status :200});
 
     } catch (err) {
       errorHandler(err, req, res, null, { message: 'Error creating repository', status: 500 });
@@ -71,7 +71,7 @@ exports.createAppRunnerService = async function(req, res, serviceName, imageRepo
     try {
       const data = await apprunner.createService(params).promise();
       console.log('AppRunner service created:', data.Service);
-      requestResponseHandler(req, res, { message: 'Service created', service: data.Service , status :200});
+      return requestResponseHandler(req, res, { message: 'Service created', service: data.Service , status :200});
       
     } catch (err) {
       errorHandler(err, req, res, null, { message: 'Error creating AppRunner service', status: 500 });
@@ -112,7 +112,7 @@ exports.createIamRoleForEcrAppRunnerCreation = async function(req, res, roleName
         console.log('Role created:', data.Role);
 
         // Send Response
-        requestResponseHandler(req, res, { message: 'Role created', role: data.Role , status :200});
+        return requestResponseHandler(req, res, { message: 'Role created', role: data.Role , status :200});
       } catch (err) {
         errorHandler(err, req, res, null, { message: 'Error creating role', status: 500 });
     }
@@ -172,7 +172,7 @@ module.exports.createNewIamUserForEcrAppRunnerCreation = async function(username
       console.log('Access keys created:', createAccessKeyData.AccessKey);
 
       // Send Response
-      requestResponseHandler(req, res, { message: 'User created', user: data.User , status :200});
+      return requestResponseHandler(req, res, { message: 'User created', user: data.User , status :200});
   
     //   return createUserData.User;
     } catch (err) {
