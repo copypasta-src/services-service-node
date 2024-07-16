@@ -1,5 +1,4 @@
 const { config } = require('dotenv');
-const { handleResponse } = require('../middleware/handleResponse.js');
 
 githubController = require('../controllers/git/githubController.js');
 ecrAppRunnerController = require('../controllers/deployment/ecrAppRunnerController.js');
