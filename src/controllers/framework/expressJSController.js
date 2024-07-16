@@ -77,6 +77,9 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         newProjectPath = path.join(__dirname, `../temp/${repoName}`);
         currentProjectPath = path.join(__dirname, `../temp/${repoName}/${repoName}`);
         console.log(`Moving files from ${currentProjectPath}`);
+        console.log(`DirName: ${__dirname}`)
+        console.log(`Current Path: ${currentProjectPath}`)
+        console.log(`New Path: ${newProjectPath}`)
         moveDirSync(currentProjectPath, newProjectPath);
   
         // Send response 
