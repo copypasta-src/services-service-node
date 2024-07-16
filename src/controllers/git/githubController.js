@@ -50,10 +50,10 @@ exports.authCallback = async (req, res) => {
     const accessToken = response.data.access_token;
     console.log(accessToken);
 
-    await requestResponseHandler(req, res, {'message' : `Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Token ${accessToken}`, 'status' : 200});
+    return requestResponseHandler(req, res, {'message' : `Authentication successful! You can now make commits on behalf of the user. Remember to store the token in the database. Token ${accessToken}`, 'status' : 200});
     
     // TODO Save the access token for the user, e.g., in a database
-    console.log(accessToken);
+
   } catch (error) {
     errorHandler(error, req, res, null, {message: 'Error exchanging code for access token', status: 500});
   }
@@ -167,7 +167,7 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     console.log('Repository has been created successfully. Main branch has been created.')
 
     // Send your response
-    requestResponseHandler(req, res, {'message' : 'Repository has been created successfully. Main branch has been created.','status' : 200})
+    return requestResponseHandler(req, res, {'message' : 'Repository has been created successfully. Main branch has been created.','status' : 200})
 
 } catch (error) {
   fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
@@ -268,7 +268,7 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
     console.log(`${branchName} branch created and files committed successfully`);
 
     // Send your response
-    requestResponseHandler(req, res, {'message' : `${branchName} branch created and files committed successfully`, 'status' : 200})
+    return requestResponseHandler(req, res, {'message' : `${branchName} branch created and files committed successfully`, 'status' : 200})
     
 } catch (error) {
     errorHandler(error, req, res, null, {message: 'Error creating branch and committing files', status: 500});
@@ -305,7 +305,7 @@ exports.confirmRepoNameAvailable = async (req, res) => {
 
   } catch (error) {
     if (error.status === 404) {
-      requestResponseHandler(req, res, {status: 200, message: 'Repository name is available', data: {available: true}});
+      return requestResponseHandler(req, res, {status: 200, message: 'Repository name is available', data: {available: true}});
     }
   }
 }
