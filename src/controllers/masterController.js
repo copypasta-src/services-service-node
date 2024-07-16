@@ -1,11 +1,13 @@
 const { config } = require('dotenv');
+const { handleResponse } = require('../middleware/handleResponse.js');
 
 githubController = require('../controllers/git/githubController.js');
 ecrAppRunnerController = require('../controllers/deployment/ecrAppRunnerController.js');
 expressJSController = require('../controllers/framework/expressJSController.js');
 require('dotenv').config();
 exports.createMicroservice = async (req, res) =>  {
-
+    reqBackup = req;
+    resBackup = res;
     try {
     const configuration = req.body.configuration;
     console.log(configuration)
@@ -102,13 +104,13 @@ exports.createMicroservice = async (req, res) =>  {
 
     } }
 
-    res.status(200).send({
+    resBackup.status(200).send({
         message: 'Microservice created successfully',
     });
 
 } catch (error) {
     console.error(error);
-    res.status(500).send('Error creating microservice');
+    resBackup.status(500).send('Error creating microservice');
 }
 
 
