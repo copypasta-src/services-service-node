@@ -61,7 +61,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
 
         // Create a new React project
         // TODO make sure this creates from a copypasta custom template or a user provided template
-        const options = { cwd: path.join(__dirname, `../temp/${repoName}`) };
+        const options = { cwd: path.join(__dirname, '..', 'temp', repoName) };
         execSync(`npx create-react-app ${repoName}`, options, (error, stdout, stderr) => {
             if (error) {
             // console.error(`Error executing command: ${error.message}`);
@@ -74,8 +74,8 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         });
 
         // Move the files from the created React project to the temp directory
-        newProjectPath = path.join(__dirname, `../temp/${repoName}`);
-        currentProjectPath = path.join(__dirname, `../temp/${repoName}/${repoName}`);
+        newProjectPath = path.join(__dirname, '..', 'temp', repoName);
+        currentProjectPath = path.join(__dirname, '..', 'temp', repoName, repoName);
         console.log(`Moving files from ${currentProjectPath}`);
         console.log(`DirName: ${__dirname}`)
         console.log(`Current Path: ${currentProjectPath}`)
