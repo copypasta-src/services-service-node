@@ -164,7 +164,6 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
 
     // delete temp repo
     fs.rmSync(path.join(__dirname, `../temp`), { recursive: true, force: true });
-    console.log('Repository has been created successfully. Main branch has been created.')
 
     // Send your response
     return requestResponseHandler(req, res, {'message' : 'Repository has been created successfully. Main branch has been created.','status' : 200})
@@ -264,8 +263,6 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
     fs.rmSync(dirpath, { recursive: true, force: true });
 
     fs.rmSync(directoryPath, { recursive: true, force: true });
-
-    console.log(`${branchName} branch created and files committed successfully`);
 
     // Send your response
     return requestResponseHandler(req, res, {'message' : `${branchName} branch created and files committed successfully`, 'status' : 200})

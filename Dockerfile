@@ -13,7 +13,7 @@ ENV GITHUB_COPYPASTA_APP_CLIENT_SECRET=${GITHUB_COPYPASTA_APP_CLIENT_SECRET}
 ENV GH_AUTH_REDIRECT_URL_BASE=${GH_AUTH_REDIRECT_URL_BASE}
 
 # Set the working directory in the container
-WORKDIR /src
+WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
@@ -22,7 +22,14 @@ COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the application code to the working directory
-COPY . /src
+COPY . .
+
+# Set the necessary permissions for the working directory
+RUN chown -R node:node /usr/src/app
+RUN chmod -R 755 /usr/src/app
+
+# Switch to a non-root user for security
+USER node
 
 ENV PORT=8080
 
