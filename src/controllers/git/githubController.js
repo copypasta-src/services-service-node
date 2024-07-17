@@ -273,6 +273,51 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
 
 }
 
+exports.cloneCommitExpressApi = async function(req, res, repoName, organization, token) {
+  try {
+     // Initialize Octokit
+     const octokit = new Octokit({
+      auth: token
+    });
+
+    const tempDir = path.join(__dirname, 'temp');
+    const git = simpleGit();
+    // TODO this should be dynamic from a database or use a npm hosted package
+    const sourceRepoUrl = 'https://github.com/opera-src/express_js_package.git'
+
+    // Step 1: Clone the source repository
+    await git.clone(sourceRepoUrl, tempDir);
+
+    // Change directory to the cloned repository
+    git.cwd(tempDir);
+
+     // Step 3: Create and checkout the 'development' branch
+    await git.checkoutLocalBranch('development');
+
+    const newRepoUrl = `https://github.com/${organization}/${repoName}.git`;
+
+    // Step 3: Set the new remote repository and push
+    await git.remote(['rm', 'origin']);  // Remove the existing origin
+    await git.addRemote('origin', newRepoUrl);
+    await git.push(['-u', 'origin', 'development']);
+
+    // Cleanup the temporary directory
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    // Send your response
+    return requestResponseHandler(req, res, {'message' : `development branch created and files committed successfully`, 'status' : 200})
+    
+} catch (error) {
+  await octokit.rest.repos.delete({
+    owner: organization,
+    repo: repoName
+});
+  console.log('Repository deleted successfully');
+    errorHandler(error, req, res, null, {message: 'Error creating branch and committing files', status: 500});
+}
+
+}
+
 exports.confirmRepoNameAvailable = async (req, res) => {
   const repoName = req.body.repoName;
   const token = req.body.token;
