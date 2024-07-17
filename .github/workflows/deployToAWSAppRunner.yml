@@ -7,9 +7,6 @@ on:
       - closed
     branches:
       - main
-  push:
-    branches:
-      - switching-to-packages
 
 jobs:
   deploy:

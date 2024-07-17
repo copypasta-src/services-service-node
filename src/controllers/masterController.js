@@ -64,14 +64,9 @@ exports.createMicroservice = async (req, res) =>  {
 
     if (configuration.framework.framework === 'express') {
         frameworkController = expressJSController;
-        // Create an express api and return the dir path
-        // console.log(`Master Controller 'express' loop path check : ${process.cwd()}`)
-        // response = await frameworkController.createExpressApi(null, null, configuration.meta.projectName);
-        // // extract the dir path
-        // repoDirectory = response.data.newProjectPath
-        // // commit the dir to the repo on a new branch
-        // await gitController.createBranchAndCommitDirectories(req = null, res = null , 'development', repoDirectory, configuration.meta.projectName , configuration.git.organizationName, configuration.git.token)
+
         await gitController.cloneCommitExpressApi(null, null , configuration.meta.projectName, configuration.git.organizationName, configuration.git.token)
+    
     }
     if (configuration.containerization) {
     if (configuration.containerization.containerizationProvider === 'docker') {
