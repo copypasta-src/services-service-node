@@ -62,8 +62,7 @@ These instructions are indended to reflect the current state of the API as it ex
         # Use an official Node.js runtime as a parent image
         FROM node:18
 
-        # Set the working directory in the container
-        WORKDIR /src
+        WORKDIR /usr/src/app
 
         # Copy package.json and package-lock.json to the working directory
         COPY package*.json ./
@@ -72,7 +71,7 @@ These instructions are indended to reflect the current state of the API as it ex
         RUN npm install
 
         # Copy the rest of the application code to the working directory
-        COPY . /src
+        COPY . .
 
         ENV PORT=8080
 
@@ -130,13 +129,13 @@ These instructions are indended to reflect the current state of the API as it ex
             env:
             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
             ECR_REPOSITORY: ${{ steps.repo_name.outputs.name }} # Change to your repository name
-            IMAGE_TAG: ${{ github.sha }}
+            IMAGE_TAG: latest
             run: |
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
     ```
     
-3. Commit and push all changed files to the `development branch`
+3. Commit and push all changed files to the `main` branch
 4. Return to GitHub web and confirm that the Actions Workflow from this commit completes successfully
 5. Create an AWS AppRunner Service (https://us-east-1.console.aws.amazon.com/apprunner/home?region=us-east-1#/services)
     - 5.1 Name the service `{my-repository-name}-runner` (case sensitive)
