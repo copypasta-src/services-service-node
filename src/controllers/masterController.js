@@ -65,6 +65,7 @@ exports.createMicroservice = async (req, res) =>  {
     if (configuration.framework.framework === 'express') {
         frameworkController = expressJSController;
         // Create an express api and return the dir path
+        console.log(`Master Controller 'express' loop path check : ${process.cwd()}`)
         response = await frameworkController.createExpressApi(null, null, configuration.meta.projectName);
         // extract the dir path
         repoDirectory = response.data.newProjectPath

@@ -53,7 +53,7 @@ module.exports.createExpressApi = async function(req, res, repoName = null)  {
         }
         console.log(repoName);
         const dirpath = path.resolve(__dirname, '..', 'temp', repoName); // Adjust path as needed
-
+        console.log(`Directory path for the temp location of our app : ${dirpath}`);
         // If the directory does not exist, create it
         if (!fs.existsSync(dirpath)) {
             fs.mkdirSync(dirpath, { recursive: true })
