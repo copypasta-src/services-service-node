@@ -225,16 +225,17 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
   }
 
   try {
+
     // Initialize Octokit
     const octokit = new Octokit({
-        auth: token
+      auth: token
     });
 
     // Local path to clone the repository
     const repoUrl = `https://github.com/${repoOwner}/${repoName}.git`;
     const dirpath = path.resolve(__dirname, '..', 'clone', repoName); // Adjust path as needed
-    fs.mkdirSync(dirpath, { recursive: true });
-
+    fs.mkdirSync(dirpath, { recursive: true })
+    
     const git = simpleGit();
 
     // await git.addConfig('user.name', githubName); // Replace with your GitHub username
@@ -244,10 +245,10 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
 
     const repo = simpleGit(dirpath);
 
+
     await repo.checkoutLocalBranch(branchName);
 
-    // Move files from temp dir to clone dir
-    const directoryPath = path.resolve(__dirname, '..', 'temp', 'your-temp-directory'); // Adjust as needed
+    // move files from temp dir to clone dir
     moveDirSync(directoryPath, dirpath);
 
     // Stage the new files
@@ -260,6 +261,7 @@ exports.createBranchAndCommitDirectories = async function(req, res, branchName, 
     await repo.push('origin', branchName);
 
     fs.rmSync(dirpath, { recursive: true, force: true });
+
     fs.rmSync(directoryPath, { recursive: true, force: true });
 
     // Send your response
