@@ -30,7 +30,7 @@ jobs:
         ROLE_ARN="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/opera-erc-apprunner-role"
         SESSION_NAME="${{ github.workflow }}-${{ github.run_id }}-${{ github.actor }}"
 
-        SESSION_NAME="${{ github.workflow }}-${{ github.run_id }}-${{ github.actor }}"
+        SESSION_NAME="${{ github.run_id }}-${{ github.actor }}"
 
         echo "Assuming role with ARN: $ROLE_ARN and session name: $SESSION_NAME"
         
