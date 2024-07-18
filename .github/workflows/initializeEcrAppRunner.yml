@@ -1,0 +1,146 @@
+name: Initialize ECR App Runner and deploy
+
+on:
+
+  pull_request:
+    types:
+      - closed
+    branches:
+       - main
+jobs:
+  deploy:
+    env:
+      AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_OPERA_MICROSERVICE_USER_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_OPERA_MICROSERVICE_USER_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+      run: |
+        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+        aws configure set region $AWS_DEFAULT_REGION
+
+    - name: Assume AWS IAM Role
+      id: assume-role
+      run: |
+        ROLE_ARN="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_APPRUNNER_ROLE }}"
+        SESSION_NAME="${{ github.workflow }}-${{ github.run_id }}-${{ github.actor }}"
+
+        SESSION_NAME="${{ github.run_id }}-${{ github.actor }}"
+
+        echo "Assuming role with ARN: $ROLE_ARN and session name: $SESSION_NAME"
+        
+        CREDENTIALS=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "$SESSION_NAME" --output json)
+        
+        if [ $? -ne 0 ]; then
+        echo "Failed to assume role"
+        exit 1
+        fi
+
+        echo "Successfully assumed role"
+        
+        export AWS_ACCESS_KEY_ID=$(echo "$CREDENTIALS" | jq -r '.Credentials.AccessKeyId')
+        export AWS_SECRET_ACCESS_KEY=$(echo "$CREDENTIALS" | jq -r '.Credentials.SecretAccessKey')
+        export AWS_SESSION_TOKEN=$(echo "$CREDENTIALS" | jq -r '.Credentials.SessionToken')
+
+        echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+        echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+        echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" 
+     
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      env:
+        AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+
+      run: |
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+    - name: Check if ECR repository exists
+      id: ecr-check
+      run: |
+        REPO_NAME=$(basename $GITHUB_REPOSITORY)
+        aws ecr describe-repositories --repository-names $REPO_NAME || \
+        aws ecr create-repository --repository-name $REPO_NAME
+
+    - name: Build and push Docker image to ECR
+      env:
+        GITHUB_COPYPASTA_APP_CLIENT_ID : ${{ secrets.GH_COPYPASTA_APP_CLIENT_ID }}
+        GITHUB_COPYPASTA_APP_CLIENT_SECRET : ${{ secrets.GH_COPYPASTA_APP_CLIENT_SECRET }}
+        GH_AUTH_REDIRECT_URL_BASE : ${{ secrets.GH_AUTH_REDIRECT_URL_BASE }}
+      run: |
+        REPO_NAME=$(basename $GITHUB_REPOSITORY)
+        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$REPO_NAME:latest
+        docker build --build-arg GITHUB_COPYPASTA_APP_CLIENT_ID=$GITHUB_COPYPASTA_APP_CLIENT_ID --build-arg GITHUB_COPYPASTA_APP_CLIENT_SECRET=$GITHUB_COPYPASTA_APP_CLIENT_SECRET --build-arg GH_AUTH_REDIRECT_URL_BASE=$GH_AUTH_REDIRECT_URL_BASE -t $IMAGE_URI .
+        docker push $IMAGE_URI
+
+    - name: Check if App Runner service exists
+      id: apprunner-check
+      run: |
+        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
+        aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text || echo "Service does not exist" > service_check.txt
+
+    - name: Create App Runner service if it does not exist
+      if: steps.apprunner-check.outputs.service_check == 'Service does not exist'
+      run: |
+        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-service
+        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
+        aws apprunner create-service --service-name $SERVICE_NAME --source-configuration '{"ImageRepository":{"ImageIdentifier":"'$IMAGE_URI'","ImageConfiguration":{"Port":"8080"},"ImageRepositoryType":"ECR"}, "AutoDeploymentsEnabled": true}' --health-check-configuration '{"Protocol": "HTTP", "Path": "/status"}'
+
+    # Okay so this last block should not be necessary. If the appRunner doesn't exist,
+    # the creation will automatically assign the image. If it does exist, the upload 
+    # to ECR will automatically deploy it to AppRunner. I'll leave it in here for future
+    # reference. 
+
+
+    # - name: Update App Runner service
+    #   if: steps.apprunner-check.outputs.service_check != 'Service does not exist'
+    #   run: |
+    #     SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
+    #     IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
+    #     SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text)
+    #     aws apprunner update-service --service-arn $SERVICE_ARN --source-configuration '{"ImageRepository":{"ImageIdentifier":"'$IMAGE_URI'","ImageConfiguration":{"Port":"8080"},"ImageRepositoryType":"ECR"}, "AutoDeploymentsEnabled": true}'
+
+  notify_failure:
+    name: Send Slack on Failure
+    needs: 
+      - deploy 
+    runs-on: ubuntu-latest
+    if: ${{ failure() }}
+    steps:
+    - name: Send Failure Notification to Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: opera-microservice-cicd-alerts # Replace with your Slack channel name
+        SLACK_COLOR: '#FF0000' # Red color for failure messages
+        SLACK_ICON: ':github:' # Slack icon, you can customize this
+        SLACK_MESSAGE: ":x: The CI/CD workflow to deploy Opera's Microservice API has failed.\n\n${{ github.workflow }}-${{ github.run_id }}-${{ github.actor }}" # Custom message
+        SLACK_TITLE: 'Deployment Failure Notification'
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # Use the secret you added
+  notify_success:
+    name: Send Slack on Success
+    needs: 
+      - deploy 
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+    steps:
+    - name: Send Success Notification to Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: express-js-cicd-alerts
+        SLACK_COLOR: '#36A64F' # Green color for success messages
+        SLACK_ICON: ':white_check_mark:' # Customize as needed
+        SLACK_MESSAGE: "The CI/CD workflow to deploy Opera's Microservice API succeded.\n\n${{ github.workflow }}-${{ github.run_id }}-${{ github.actor }}"
+        SLACK_TITLE: 'Deployment Success Notification'
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
