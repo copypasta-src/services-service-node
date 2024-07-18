@@ -13,6 +13,16 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Configure AWS Credentials
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_OPERA_MICROSERVICE_USER_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_OPERA_MICROSERVICE_USER_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+      run: |
+        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+        aws configure set region $AWS_DEFAULT_REGION
+
 
     - name: Assume Role
       id: assume-role
