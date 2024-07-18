@@ -4,6 +4,7 @@ const githubRoutes = require('./routes/git/githubRoutes.js');
 const expressRoutes = require('./routes/framework/expressJSRoutes.js');
 const masterRoutes = require('./routes/masterRoutes.js');
 const deploymentRoutes = require('./routes/deployment/deploymentRoutes.js');
+const cicdRoutes = require('./routes/cicd/cicdRoutes.js');
 const swaggerUi = require('swagger-ui-express');
 const path = require('path');
 const YAML = require('yamljs');
@@ -25,6 +26,7 @@ app.use('/github', githubRoutes);
 app.use('/expressjs', expressRoutes);
 app.use('/init', masterRoutes);
 app.use('/deployment', deploymentRoutes)
+app.use('/cicd', cicdRoutes);
 // Serve API status for CICD tests
 app.get('/status', (req, res) => {
     res.status(200).json({ message: 'API is working.' });
