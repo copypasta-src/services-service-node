@@ -1,0 +1,74 @@
+name: Initialize ECR App Runner and deploy
+
+on:
+
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Assume Role
+      id: assume-role
+      run: |
+        ROLE_ARN="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/opera-erc-apprunner-role"
+        SESSION_NAME="opera-erc-apprunner-session"
+        
+        CREDENTIALS=$(aws sts assume-role --role-arn $ROLE_ARN --role-session-name $SESSION_NAME)
+        
+        echo "AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
+        echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
+        echo "AWS_SESSION_TOKEN=$(echo $CREDENTIALS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      run: |
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+    - name: Check if ECR repository exists
+      id: ecr-check
+      run: |
+        REPO_NAME=$(basename $GITHUB_REPOSITORY)
+        aws ecr describe-repositories --repository-names $REPO_NAME || \
+        aws ecr create-repository --repository-name $REPO_NAME
+
+    - name: Build and push Docker image
+      env:
+        GITHUB_COPYPASTA_APP_CLIENT_ID : ${{ secrets.GH_COPYPASTA_APP_CLIENT_ID }}
+        GITHUB_COPYPASTA_APP_CLIENT_SECRET : ${{ secrets.GH_COPYPASTA_APP_CLIENT_SECRET }}
+        GH_AUTH_REDIRECT_URL_BASE : ${{ secrets.GH_AUTH_REDIRECT_URL_BASE }}
+      run: |
+        REPO_NAME=$(basename $GITHUB_REPOSITORY)
+        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$REPO_NAME:latest
+        docker build --build-arg GITHUB_COPYPASTA_APP_CLIENT_ID=$GITHUB_COPYPASTA_APP_CLIENT_ID --build-arg GITHUB_COPYPASTA_APP_CLIENT_SECRET=$GITHUB_COPYPASTA_APP_CLIENT_SECRET --build-arg GH_AUTH_REDIRECT_URL_BASE=$GH_AUTH_REDIRECT_URL_BASE -t $IMAGE_URI .
+        docker push $IMAGE_URI
+
+    - name: Check if App Runner service exists
+      id: apprunner-check
+      run: |
+        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
+        aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text || echo "Service does not exist" > service_check.txt
+
+    - name: Create App Runner service
+      if: steps.apprunner-check.outputs.service_check == 'Service does not exist'
+      run: |
+        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-service
+        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
+        aws apprunner create-service --service-name $SERVICE_NAME --source-configuration "ImageRepository={ImageIdentifier=$IMAGE_URI,ImageConfiguration={Port=8080},ImageRepositoryType=ECR}" --health-check-configuration Path="/status" --auto-deployments-enabled
+
+    - name: Update App Runner service
+      if: steps.apprunner-check.outputs.service_check != 'Service does not exist'
+      run: |
+        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
+        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
+        SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text)
+        aws apprunner update-service --service-arn $SERVICE_ARN --source-configuration "ImageRepository={ImageIdentifier=$IMAGE_URI,ImageConfiguration={Port=8080},ImageRepositoryType=ECR}" --auto-deployments-enabled
