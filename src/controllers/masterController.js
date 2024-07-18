@@ -93,7 +93,7 @@ exports.createMicroservice = async (req, res) =>  {
     if (configurations.cicd.cicdProvider === 'githubActions') {
         // Create a github actions workflow file
         // commit the file to the development branch
-        await cicdController.createGithubActionsWorkflow
+        await cicdController.createGithubActionsWorkflow(null, null, configuration)
 
     }}
     if (configuration.deployment) {
