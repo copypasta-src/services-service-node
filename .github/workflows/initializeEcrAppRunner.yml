@@ -8,6 +8,9 @@ on:
 
 jobs:
   deploy:
+    env:
+        AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+
     runs-on: ubuntu-latest
 
     steps:
@@ -55,6 +58,9 @@ jobs:
 
     - name: Log in to Amazon ECR
       id: login-ecr
+      env:
+        AWS_DEFAULT_REGION: us-east-1  # Adjust to your AWS region
+
       run: |
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
