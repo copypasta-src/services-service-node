@@ -93,12 +93,12 @@ jobs:
       run: |
         SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-service
         IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
-        aws apprunner create-service --service-name $SERVICE_NAME --source-configuration "ImageRepository={ImageIdentifier=$IMAGE_URI,ImageConfiguration={Port=8080},ImageRepositoryType=ECR}" --health-check-configuration Path="/status" --auto-deployments-enabled
+        aws apprunner create-service --service-name $SERVICE_NAME --source-configuration '{"ImageRepository":{"ImageIdentifier":"'$IMAGE_URI'","ImageConfiguration":{"Port":"8080"},"ImageRepositoryType":"ECR"}, "AutoDeploymentsEnabled": true}' --health-check-configuration '{"Protocol": "HTTP", "Path": "/status"}'
 
-    - name: Update App Runner service
-      if: steps.apprunner-check.outputs.service_check != 'Service does not exist'
-      run: |
-        SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
-        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
-        SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text)
-        aws apprunner update-service --service-arn $SERVICE_ARN --source-configuration '{"ImageRepository":{"ImageIdentifier":"'$IMAGE_URI'","ImageConfiguration":{"Port":"8080"},"ImageRepositoryType":"ECR"}, "AutoDeploymentsEnabled": true}'
+    # - name: Update App Runner service
+    #   if: steps.apprunner-check.outputs.service_check != 'Service does not exist'
+    #   run: |
+    #     SERVICE_NAME=$(basename $GITHUB_REPOSITORY)-runner
+    #     IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$(basename $GITHUB_REPOSITORY):latest
+    #     SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" --output text)
+    #     aws apprunner update-service --service-arn $SERVICE_ARN --source-configuration '{"ImageRepository":{"ImageIdentifier":"'$IMAGE_URI'","ImageConfiguration":{"Port":"8080"},"ImageRepositoryType":"ECR"}, "AutoDeploymentsEnabled": true}'
