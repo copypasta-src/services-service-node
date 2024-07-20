@@ -374,6 +374,7 @@ module.exports.createGithubSecret = async function(secretName, secretValue, repo
   return response;
 }
 
+
 exports.setLocalGitConfig = async function(token, repoPath ) {
   if (!Octokit) {
     const octokitModule = await import('@octokit/rest');
@@ -436,3 +437,4 @@ execSync(`echo "https://${user.login}:${token}@github.com" > ~/.git-credentials`
 return git;
 
 }
+
