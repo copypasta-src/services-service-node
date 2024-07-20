@@ -3,6 +3,8 @@ const { config } = require('dotenv');
 githubController = require('../controllers/git/githubController.js');
 ecrAppRunnerController = require('../controllers/deployment/ecrAppRunnerController.js');
 expressJSController = require('../controllers/framework/expressJSController.js');
+cicdController = require('../controllers/cicd/cicdController.js');
+dockerController = require('../controllers/containerization/dockerController.js');
 require('dotenv').config();
 exports.createMicroservice = async (req, res) =>  {
     reqBackup = req;
@@ -30,7 +32,14 @@ exports.createMicroservice = async (req, res) =>  {
             token : ""
         },
         cicd: { // optional
-            cicdProvider : 'githubActions' 
+            cicdProvider : 'githubActions' ,
+            repoUrl : '',
+            trigger: {
+                "pull_request": {
+                  "types": ["closed"],
+                  "branches": ["main"]
+                }
+              },
         },
         containerization : { // optional
             containerizationProvider : 'docker', 
@@ -44,6 +53,12 @@ exports.createMicroservice = async (req, res) =>  {
                 deploymentModule : 'AppRunner',
                 deploymentContainerRepositorty : 'ECR',
                 autoDeploy : true,
+                aws_access_key_secret_name : '', // This is the repository secret variable name
+                aws_access_secret_key_secret_name : '', // This is the repository secret variable name
+                aws_account_id_secret_name : '', // This is the repository secret variable name
+                aws_region : 'us-east-1',
+
+
             }
             
         }
@@ -70,20 +85,26 @@ exports.createMicroservice = async (req, res) =>  {
     }
     if (configuration.containerization) {
     if (configuration.containerization.containerizationProvider === 'docker') {
+        await dockerController.createDockerfile(null, null, configuration)
         // containerization controller = dockerController
         // Create a dockerfile
         // Create a .dockerignore file
         // commit the files to the development branch
     }}
     if (configuration.cicd) {
-    if (configurations.cicd.cicdProvider === 'githubActions') {
+    if (configuration.cicd.cicdProvider === 'githubActions') {
         // Create a github actions workflow file
         // commit the file to the development branch
+        // Add a delay between operations if needed
+
+        // await new Promise(resolve => setTimeout(resolve, 10000));
+        await cicdController.createGithubActionsWorkflow(null, null, configuration)
+
     }}
     if (configuration.deployment) {
-    if (configurations.deployment.deploymentProvider === 'aws') {
+    if (configuration.deployment.deploymentProvider === 'aws') {
         // work through the deployment provider configuration
-        if (configurations.deployment.deploymentProviderConfiguration.deploymentModule === 'AppRunner') {
+        if (configuration.deployment.deploymentProviderConfiguration.deploymentModule === 'AppRunner') {
             if (containerizationController != null) {
                 // this means that its appRunner + ecr 
                 // create role 
@@ -94,9 +115,9 @@ exports.createMicroservice = async (req, res) =>  {
                 // this means that its appRunner using source code repository instead of contaner image
             }
         }
-    } else if (configurations.deployment.deploymentProvider === 'google'){
+    } else if (configuration.deployment.deploymentProvider === 'google'){
 
-    } else if (configurations.deployment.deploymentProvider === 'azure'){
+    } else if (configuration.deployment.deploymentProvider === 'azure'){
 
     } }
 

@@ -101,47 +101,47 @@ exports.initializeServiceRepository = async function(req, res, repoNameArg = nul
     const dirpath = path.resolve(__dirname, '..', 'temp', repoName); // Adjust path as needed
     fs.mkdirSync(dirpath, { recursive: true })
     
-    const git = simpleGit();
+    const git = await exports.setLocalGitConfig(token, null);
     // Set Git configuration with user details
 
-      if (!primaryEmail ) {
-        throw new Error("User name or email is missing from GitHub profile.");
-      } if (!user.name) {
-        user.name = 'GitHub User';
-      }
-      // Set Git configuration with user details
-      execSync(`git config --global user.email "${primaryEmail}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error setting Git email: ${stderr}`);
-          throw new Error(`Error setting Git email: ${stderr}`);
-        }
-        console.log(`Git email set to: ${primaryEmail}`);
-      });
+    //   if (!primaryEmail ) {
+    //     throw new Error("User name or email is missing from GitHub profile.");
+    //   } if (!user.name) {
+    //     user.name = 'GitHub User';
+    //   }
+    //   // Set Git configuration with user details
+    //   execSync(`git config --global user.email "${primaryEmail}"`, (error, stdout, stderr) => {
+    //     if (error) {
+    //       console.error(`Error setting Git email: ${stderr}`);
+    //       throw new Error(`Error setting Git email: ${stderr}`);
+    //     }
+    //     console.log(`Git email set to: ${primaryEmail}`);
+    //   });
   
-      execSync(`git config --global user.name "${user.name}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error setting Git name: ${stderr}`);
-          throw new Error(`Error setting Git name: ${stderr}`);
-        }
-        console.log(`Git name set to: ${user.name}`);
-      });
-      // Set up Git credential helper
-    execSync(`git config --global credential.helper store`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error setting Git credential helper: ${stderr}`);
-        throw new Error(`Error setting Git credential helper: ${stderr}`);
-      }
-      console.log(`Git credential helper set.`);
-    });
+    //   execSync(`git config --global user.name "${user.name}"`, (error, stdout, stderr) => {
+    //     if (error) {
+    //       console.error(`Error setting Git name: ${stderr}`);
+    //       throw new Error(`Error setting Git name: ${stderr}`);
+    //     }
+    //     console.log(`Git name set to: ${user.name}`);
+    //   });
+    //   // Set up Git credential helper
+    // execSync(`git config --global credential.helper store`, (error, stdout, stderr) => {
+    //   if (error) {
+    //     console.error(`Error setting Git credential helper: ${stderr}`);
+    //     throw new Error(`Error setting Git credential helper: ${stderr}`);
+    //   }
+    //   console.log(`Git credential helper set.`);
+    // });
 
-    // Store the GitHub token in the credential helper
-    execSync(`echo "https://${user.login}:${token}@github.com" > ~/.git-credentials`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error storing GitHub token: ${stderr}`);
-        throw new Error(`Error storing GitHub token: ${stderr}`);
-      }
-      console.log(`GitHub token stored.`);
-    });
+    // // Store the GitHub token in the credential helper
+    // execSync(`echo "https://${user.login}:${token}@github.com" > ~/.git-credentials`, (error, stdout, stderr) => {
+    //   if (error) {
+    //     console.error(`Error storing GitHub token: ${stderr}`);
+    //     throw new Error(`Error storing GitHub token: ${stderr}`);
+    //   }
+    //   console.log(`GitHub token stored.`);
+    // });
 
     await git.clone(repoUrl, dirpath);
 
@@ -373,3 +373,70 @@ module.exports.createGithubSecret = async function(secretName, secretValue, repo
 
   return response;
 }
+
+
+
+exports.setLocalGitConfig = async function(token, repoPath ) {
+  if (!Octokit) {
+    const octokitModule = await import('@octokit/rest');
+    Octokit = octokitModule.Octokit;
+  }
+
+  // Initialize Octokit
+  const octokit = await new Octokit({
+    auth: token
+  });
+
+  const git = simpleGit();
+
+  // Fetch the authenticated user's details
+  const { data: user } = await octokit.users.getAuthenticated();
+  const { data: emails } = await octokit.users.listEmailsForAuthenticatedUser();
+  emails.length == 0 ? primaryEmail = emails :primaryEmail = emails.find(email => email.primary).email;
+
+  if (!primaryEmail ) {
+    throw new Error("User name or email is missing from GitHub profile.");
+  } if (!user.name) {
+    user.name = 'GitHub User';
+  }
+  // await git.addConfig('user.name', user.name, 'local');
+  // await git.addConfig('user.email', primaryEmail, 'local');
+//   // Set Git configuration with user details
+  execSync(`git config --global user.email "${primaryEmail}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error setting Git email: ${stderr}`);
+      throw new Error(`Error setting Git email: ${stderr}`);
+    }
+    console.log(`Git email set to: ${primaryEmail}`);
+  });
+
+  execSync(`git config --global user.name "${user.name}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error setting Git name: ${stderr}`);
+      throw new Error(`Error setting Git name: ${stderr}`);
+    }
+    console.log(`Git name set to: ${user.name}`);
+  });
+  // Set up Git credential helper
+execSync(`git config --global credential.helper store`, (error, stdout, stderr) => {
+  if (error) {
+    console.error(`Error setting Git credential helper: ${stderr}`);
+    throw new Error(`Error setting Git credential helper: ${stderr}`);
+  }
+  console.log(`Git credential helper set.`);
+});
+
+// Store the GitHub token in the credential helper
+execSync(`echo "https://${user.login}:${token}@github.com" > ~/.git-credentials`, (error, stdout, stderr) => {
+  if (error) {
+    console.error(`Error storing GitHub token: ${stderr}`);
+    throw new Error(`Error storing GitHub token: ${stderr}`);
+  }
+  console.log(`GitHub token stored.`);
+});
+
+return git;
+
+}
+
+

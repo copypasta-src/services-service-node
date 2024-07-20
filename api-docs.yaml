@@ -41,111 +41,48 @@ paths:
         '500':
           description: Server Error
   '/init/create' :
-    get:
+    post:
       tags:
       - Master Controller
       summary: Creates a new project. This function will create a new project with the provided name and then initialize the project with the provided template.
       requestBody:
         required: true
-      parameters:
-        - name: configuration
-          description: JSON object containing the configuration of the project
-          
-          in: body
-          required: true
-          schema:
-              type: object
-          # TODO FIXME cant have nested objects in the schema
-          properties:
-            meta:
-              description: Metadata about the project
-              required: true
-              schema:
-                  type: object
-              properties:
-                projectName:
-                  type: string
-                  description: formatted name of the project (no spaces, all lowercase, underscores for spaces)
-                name:
-                  type: string
-                  description: Display name of the project
-                description:
-                  type: string
-                  description: Description of the project
-            framework : 
-              description: The framework that you want to use to create the project
-              required: true
-              schema:
-                  type: object
-              properties:
+        content:  
+          application/json:
+            example:
+              configuration:
+                meta:
+                  name: Display Name Pretty
+                  description: Description of project
+                  projectName: name-of-git-repo-formatted
                 framework:
-                  type: string
-                  description: The framework that you want to use to create the project
-            database : 
-              description: The database that you want to use in the project (WIP)
-              required: false
-              schema:
-                  type: object
-            git : 
-              description: The git provider that you want to use in the project
-              required: true
-              schema:
-                  type: object
-              properties:
-                gitProvider:
-                  type: string
-                  description: The git provider that you want to use in the project
-            cicd :
-              description: The CI/CD provider that you want to use in the project
-              required: false
-              schema:
-                  type: object
-              properties:
-                cicdProvider:
-                  type: string
-                  description: The CI/CD provider that you want to use in the project
-            containerization :
-              description: The containerization provider that you want to use in the project
-              required: false
-              schema:
-                  type: object
-              properties:
-                containerizationProvider:
-                  type: string
-                  description: The containerization provider that you want to use in the project  
-                  default: Docker
-                port:
-                  type: string
-                  description: The port that you want to expose on the container
-                  default: 8080
-            deployment:
-              description: The deployment provider that you want to use in the project
-              required: false
-              schema:
-                  type: object
-              properties:
-                deploymentProvider:
-                  type: string
-                  description: The deployment provider that you want to use in the project
-                deploymentProviderConfiguration:
-                  type: object
-                  description: The configuration for the deployment provider
-                  properties:
-                    deploymentModule:
-                      type: string
-                      description: The module that you want to deploy if your provider allows multiple modules
-                    deploymentContainerRepository:
-                      type: string
-                      description: The container repository that you want to use for deployment if you chose to use containerization
-                    autoDeploy:
-                      type: boolean
-                      description: Whether or not you want to automatically deploy the container image every time a new image is uploaded. Vairied applicaibility based on the deployment provider.
-        - name: template
-          description: The template that you want to use to create the project
-          in: query
-          required: true
-          schema:
-              type: string
+                  framework: express
+                git:
+                  gitProvider: github
+                  organizationName: name-of-git-organization
+                  token: 12345678910euskauvkasfggirnvasdk
+                cicd:
+                  cicdProvider: githubActions
+                  trigger:
+                    pull_request:
+                      types:
+                        - closed
+                      branches:
+                        - main
+                containerization:
+                  containerizationProvider: docker
+                  port: 8080
+                deployment:
+                  deploymentProvider: aws 
+                  deploymentProviderConfiguration:
+                    deploymentModule: AppRunner
+                    deploymentContainerRepository: ECR
+                    autoDeploy: true
+                    aws_access_key_secret_name : AWS_OPERA_MICROSERVICE_USER_ACCESS_KEY # This is the repository secret variable name
+                    aws_access_secret_key_secret_name : AWS_OPERA_MICROSERVICE_USER_SECRET_ACCESS_KEY # This is the repository secret variable name
+                    aws_account_id_secret_name : AWS_ACCOUNT_ID # This is the repository secret variable name
+                    aws_region : 'us-east-1' 
+                    aws_ecr_apprunner_role_secret_name : AWS_ECR_APPRUNNER_ROLE               
       responses:
         '200':
           description: Successfully Created
@@ -288,3 +225,68 @@ paths:
           
         '500':
           description: Failed to create expressjs application
+  '/cicd/github-actions' :
+    post:
+      tags:
+      - CI/CD
+      summary: Adds CI/CD workflow file to the project repository.
+      requestBody:
+        required: true
+        content:  
+          application/json:
+            # schema:
+            #     type: object
+            #     properties:
+            #       name:
+            #         type: object
+            #         description: The name of the project
+            #         properties:
+            #           name:
+            #             type: string
+            #             description: test 
+
+            #       email:
+            #         type: string
+            example:
+              configuration:
+                meta:
+                  projectName: name-of-git-repo
+                git:
+                  gitProvider: github
+                  organizationName: name-of-git-organization
+                  token: 12345678910euskauvkasfggirnvasdk
+                cicd:
+                  cicdProvider: githubActions
+                  trigger:
+                    pull_request:
+                      types:
+                        - closed
+                      branches:
+                        - main
+                containerization:
+                  containerizationProvider: docker
+                deployment:
+                  deploymentProvider: aws 
+                  deploymentProviderConfiguration:
+                    deploymentModule: AppRunner
+                    deploymentContainerRepository: ECR
+                    autoDeploy: true
+                    aws_access_key_secret_name : AWS_OPERA_MICROSERVICE_USER_ACCESS_KEY # This is the repository secret variable name
+                    aws_access_secret_key_secret_name : AWS_OPERA_MICROSERVICE_USER_SECRET_ACCESS_KEY # This is the repository secret variable name
+                    aws_account_id_secret_name : AWS_ACCOUNT_ID # This is the repository secret variable name
+                    aws_region : 'us-east-1' 
+                    aws_ecr_apprunner_role_secret_name : AWS_ECR_APPRUNNER_ROLE               
+                
+
+      # parameters:
+      #   - name: configuration
+      #     description: JS Object containing the configuration information of the project.
+      #     in: body
+      #     required: true
+      #     schema:
+      #         type: object
+      responses:
+        '200':
+          description: CI/CD workflow file added successfully
+        '500':
+          description: Failed to add CI/CD workflow file
