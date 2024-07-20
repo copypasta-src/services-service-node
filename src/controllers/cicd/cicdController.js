@@ -20,6 +20,8 @@ exports.createGithubActionsWorkflow = async (req, res, configuration = null) => 
     if (configuration == null) {
         configuration = req.body.configuration;
     }
+    const tempDir = path.join(__dirname, 'temp');
+
 
     try {
         // Initialize Octokit
@@ -27,29 +29,19 @@ exports.createGithubActionsWorkflow = async (req, res, configuration = null) => 
          auth: configuration.git.token
        });
    
-        const tempDir = path.join(__dirname, 'temp');
-        const git = simpleGit();
         // TODO this should be dynamic from a database or use a npm hosted package
-        const sourceRepoUrl = `https://github.com/${configuration.git.organizationName}/${configuration.meta.projectName}`;
+        const sourceRepoUrl = `https://github.com/${configuration.git.organizationName}/${configuration.meta.projectName}.git`;
+
+        const git = simpleGit();
 
         // Step 1: Clone the source repository
         await git.clone(sourceRepoUrl, tempDir);
 
-        // Step 2: Change directory to the cloned repository
-        git.cwd(tempDir);
-        
-        const remoteBranches = await git.branch(['-r']);
-        const branchExists = remoteBranches.all.includes('origin/development');
+        const repo = simpleGit(tempDir)
 
-        // Step 3: Create and checkout the 'development' branch if it doesn't exist
-        if (!branchExists) {
-            await git.checkoutLocalBranch('development');
-            await git.push(['-u', 'origin', 'development']);
-        } else {
-            git.checkout('development');
-        }
-
-       // Step 4: Create the .github/workflows directory
+        await repo.checkout('development');
+   
+        // Step 4: Create the .github/workflows directory
         fs.mkdirSync(path.join(tempDir, '.github/workflows'), { recursive: true });
 
         const filePath = path.join(tempDir, '.github/workflows/github-actions-build-deploy.yml');
@@ -58,19 +50,21 @@ exports.createGithubActionsWorkflow = async (req, res, configuration = null) => 
         fs.writeFileSync(filePath, yamlContent, 'utf8');
 
         // Step 5: Set the new remote repository and push
-        await git.add(filePath);
+        await repo.add(filePath);
         // Step 6: Commit the changes
-        await git.commit('Created CICDs workflow');
+        await repo.commit('Created CICDs workflow');
         // Step 7: Push the new branch to the remote repository
-        await git.push('origin', 'development');
+        await repo.push('origin', 'development');
         // Step 8: Cleanup the temporary directory
         fs.rmSync(tempDir, { recursive: true, force: true });
-
         // send response
         requestResponseHandler(req, res,{message: 'Github actions workflow created successfully', status: 200});
 
 } catch (error) {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
     errorHandler(error, req, res, null, {message: 'Github actions workflow creation failed', status: 500});
+    
 } }
 
 exports.createGithubActionsWorkflowYaml = (configuration) => {
