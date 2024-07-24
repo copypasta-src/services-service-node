@@ -9,6 +9,7 @@ const containerizationRoutes = require('./routes/containerization/containerizati
 const swaggerUi = require('swagger-ui-express');
 const path = require('path');
 const YAML = require('yamljs');
+const fs = require('fs');
 const swaggerDocument = YAML.load(path.join(__dirname, '..', 'api-docs.yaml'));
 
 
@@ -29,6 +30,10 @@ app.use('/init', masterRoutes);
 app.use('/deployment', deploymentRoutes)
 app.use('/cicd', cicdRoutes);
 app.use('/containerization', containerizationRoutes);
+app.use('/configuration' , (req, res) => {
+    const configuration = JSON.parse(fs.readFileSync(path.join(__dirname, '../configuration.json')));
+    res.status(200).json(configuration);
+})
 // Serve API status for CICD tests
 app.get('/status', (req, res) => {
     res.status(200).json({ message: 'API is working.' });
