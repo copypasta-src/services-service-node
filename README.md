@@ -20,9 +20,9 @@ At the end of applicable steps, I'm going to put in [brackets] where I think the
     - 1.2 save name of IAM role created
 
 ### GitHub
-1. Request the `/github/auth` endpoint to obtain your GitHub token. [User Onboarding]
+1. Request the `/github/auth` endpoint to obtain your GitHub token. [Admin - stored in database]
 2. Create an organization in GitHub to house your microservice repositories. [Admin / Organization Decision]
-3. Create the following organization level secrets
+3. Create the following organization level secrets [Admin - stored in database and passed via api callss]
     - 3.1 `AWS_${organization_name}_USER_ACCESS_KEY` = Key from AWS step 1.1
     - 3.2 `AWS_${organization_name}_USER_SECRET_ACCESS_KEY` = Secret Key from AWS step 1.1
     - 3.3 `AWS_ACCOUNT_ID` = AWS root account ID
