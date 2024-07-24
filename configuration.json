@@ -1,0 +1,10 @@
+{
+   
+    "name" : "Microservices API",
+    "description" : "API that handles all logic for the creation and management of microservices",
+    "version" : "1.0.0",
+    "type" : "microservice",
+    "author" : "Zach Tucker",
+    "gitUrl" : "https://github.com/opera-src/services-service-node"
+    
+}
