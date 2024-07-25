@@ -5,6 +5,36 @@
     "version" : "1.0.0",
     "type" : "microservice",
     "author" : "Zach Tucker",
-    "gitUrl" : "https://github.com/opera-src/services-service-node"
-    
+    "gitUrl" : "https://github.com/opera-src/services-service-node",
+    "ingredients" : {
+        "cicd" : {
+            "Github Actions" : {
+                "cicdProvider" : "githubActions"
+            }
+        },
+        "containerization" : {
+            "Docker" : {
+                "containerizationProvider" : "docker"
+            }
+        },
+        "deployment" : {
+            "AWS AppRunner + ECR" : {
+                "deploymentProvider" : "aws",
+                "deploymentProviderConfiguration" : {
+                    "deploymentModule" : "AppRunner",
+                    "deploymentContainerRepositorty" : "ECR"
+                }
+            }
+        },
+        "framework" : {
+            "ExpressJS" : {
+                "frameworkProvider" : "express"
+            }
+        },
+        "git" : {
+            "Github" : {
+                "gitProvider" : "github"
+            }
+        }
+    }
 }
