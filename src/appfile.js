@@ -11,11 +11,13 @@ const path = require('path');
 const YAML = require('yamljs');
 const fs = require('fs');
 const swaggerDocument = YAML.load(path.join(__dirname, '..', 'api-docs.yaml'));
+const cors = require('cors');
 
 
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 app.get('/', (req, res) => {
     try{
     res.status(200).send('Hello World');} 
